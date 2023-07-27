@@ -1,0 +1,32 @@
+{
+	"compilerOptions": {
+		/* Visit https://aka.ms/tsconfig to read more about this file */
+
+		/* Language and Environment */
+		"target": "ES2018",
+
+		/* Modules */
+		"module": "CommonJS",
+		"moduleResolution": "Node",
+		"esModuleInterop": true,
+
+		/* Type Checking */
+		"strict": true,
+		"noImplicitAny": true,                            /* Enable error reporting for expressions and declarations with an implied 'any' type. */
+		"strictNullChecks": true,                         /* When type checking, take into account 'null' and 'undefined'. */
+		"strictFunctionTypes": true,                      /* When assigning functions, check to ensure parameters and the return values are subtype-compatible. */
+		"strictBindCallApply": true,                      /* Check that the arguments for 'bind', 'call', and 'apply' methods match the original function. */
+		"strictPropertyInitialization": true,             /* Check for class properties that are declared but not set in the constructor. */
+		"noImplicitThis": true,                           /* Enable error reporting when 'this' is given the type 'any'. */
+		"useUnknownInCatchVariables": true,               /* Default catch clause variables as 'unknown' instead of 'any'. */
+
+		/* Completeness */
+		// "skipDefaultLibCheck": true,                      /* Skip type checking .d.ts files that are included with TypeScript. */
+		"skipLibCheck": true,                                /* Skip type checking all .d.ts files. */
+
+		"outDir": "./bin",
+		"typeRoots": ["./types"]
+	},
+	"include": ["source"],
+	"exclude": ["node_modules"]
+}

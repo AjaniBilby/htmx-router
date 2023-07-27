@@ -1,5 +1,5 @@
 import { RouteTree } from "./router";
-import { ErrorResponse, Redirect, Outlet, Override, RenderArgs } from "./types";
+import { ErrorResponse, Redirect, Outlet, Override, RenderArgs } from "./shared";
 import { StyleCSS } from "./helper";
 
 

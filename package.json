@@ -9,9 +9,6 @@
 	"bin": {
 		"htmx-router": "bin/cli.js"
 	},
-	"files": [
-		"./bin/*"
-	],
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/AjaniBilby/htmx-router.git"
@@ -23,7 +20,7 @@
 	},
 	"homepage": "https://github.com/AjaniBilby/htmx-router#readme",
 	"devDependencies": {
-		"@types/node": "^20.4.4",
+		"@types/node": "^20.4.5",
 		"ts-node": "^10.9.1",
 		"typescript": "^5.1.6"
 	}

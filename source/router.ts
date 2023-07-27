@@ -6,7 +6,7 @@ import {
 	Redirect,
 	RenderArgs,
 	RouteModule
-} from "./types";
+} from "./shared";
 
 export function IsAllowedExt(ext: string) {
 	// js, jsx, tsx, ts

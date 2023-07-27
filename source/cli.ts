@@ -1,13 +1,15 @@
-// #!/usr/bin/env node
-// "use strict";
+#!/usr/bin/env node
+"use strict";
 
-import { readdirSync, writeFileSync, existsSync } from "node:fs";
-import { extname, join } from "node:path";
+import { readdirSync, writeFileSync } from "fs";
+import { extname, join, relative } from "path";
 
 import { IsAllowedExt } from "./router";
 
+const cwd = process.argv[2] || "./";
+
 const rootMatcher = new RegExp(/^root\.(j|t)sx?$/);
-const root = readdirSync('./')
+const root = readdirSync(cwd)
 	.filter(x => rootMatcher.test(x))[0];
 
 if (!root) {
@@ -34,12 +36,14 @@ function readDirRecursively(dir: string) {
 
 
 const DIR = './routes';
-const files = readDirRecursively(DIR)
+const files = readDirRecursively(`${cwd}/routes`)
 	.filter(x => IsAllowedExt(extname(x).slice(1)))
-	.map(x => x.slice(0, x.lastIndexOf(".")).replace(/\\/g, "/"))
+	.map(x => relative(cwd,
+		x.slice(0, x.lastIndexOf("."))
+	).replace(/\\/g, "/"))
 	.sort();
 
-let script = `import { RouteTree } from "../router/index";\n`;
+let script = `import { RouteTree } from "htmx-router";\n`;
 for (let i=0; i<files.length; i++) {
 	const file = files[i];
 	script += `import * as Route${i} from "./${file}";\n`;
@@ -54,5 +58,5 @@ for (let i=0; i<files.length; i++) {
 }
 script += `Router.assignRoot(RootRoute);\n`
 
-writeFileSync('./router.ts', script);
+writeFileSync(`${cwd}/router.ts`, script);
 console.log( `Build with routes;\n` + files.map(x => `  - ${x}`).join("\n"));

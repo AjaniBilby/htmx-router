@@ -1,6 +1,6 @@
 {
 	"name": "htmx-router",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"description": "A remix.js style file path router for htmX websites",
 	"main": "./bin/index.js",
 	"scripts": {
@@ -23,5 +23,8 @@
 		"@types/node": "^20.4.5",
 		"ts-node": "^10.9.1",
 		"typescript": "^5.1.6"
+	},
+	"dependencies": {
+		"csstype": "^3.1.2"
 	}
 }

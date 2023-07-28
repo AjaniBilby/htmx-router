@@ -9,13 +9,15 @@ import {
 } from "./shared";
 
 export function IsAllowedExt(ext: string) {
-	// js, jsx, tsx, ts
-	if (ext[1] !== "s") return false;
-	if (ext[0] !== "j" && ext[0] !== "t" ) return false;
+	if (ext[0] !== ".") return false;
 
-	if (ext.length == 2) return true;
-	if (ext.length != 3) return false;
-	if (ext[2] !== "x") return false;
+	// js, jsx, tsx, ts
+	if (ext[2] !== "s") return false;
+	if (ext[1] !== "j" && ext[1] !== "t" ) return false;
+
+	if (ext.length == 3) return true;
+	if (ext.length != 4) return false;
+	if (ext[3] !== "x") return false;
 
 	return true;
 }

@@ -7,7 +7,7 @@
 		"build": "tsc"
 	},
 	"bin": {
-		"htmx-router": "bin/cli.js"
+		"htmx-router": "bin/cli/index.js"
 	},
 	"repository": {
 		"type": "git",

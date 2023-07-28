@@ -65,6 +65,7 @@ export class RenderArgs {
 	req: http.IncomingMessage;
 	res: http.ServerResponse;
 	params: MetaHTML;
+	depth: number;
 	url: URL;
 
 	links: MetaHTML[];
@@ -75,6 +76,7 @@ export class RenderArgs {
 		this.res = res;
 		this.url = url;
 		this.params = {};
+		this.depth = -1;
 
 		this.links = [];
 		this.meta  = [];

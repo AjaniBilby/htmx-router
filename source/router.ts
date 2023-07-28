@@ -37,12 +37,13 @@ class RouteLeaf {
 		this.mask   = mask;
 	}
 
-	makeOutlet(args: RenderArgs, outlet: Outlet): Outlet {
+	makeOutlet(args: RenderArgs, outlet: Outlet, depth: number): Outlet {
 		const renderer = this.module.Render || blankOutlet;
 		const catcher  = this.module.CatchError;
 
 		return async () => {
 			try {
+				args.depth = depth;
 				return await renderer(args, outlet);
 			} catch (e) {
 				if (e instanceof Redirect || e instanceof Override)
@@ -51,8 +52,10 @@ class RouteLeaf {
 				const err = (e instanceof ErrorResponse) ? e :
 					new ErrorResponse(500, "Runtime Error", e);
 
-				if (catcher)
+				if (catcher) {
+					args.depth = depth;
 					return await catcher(args, err);
+				}
 
 				throw err;
 			}
@@ -178,8 +181,8 @@ export class RouteTree {
 					`Unable to find ${args.url.pathname}`
 				)}
 			} else if (this.default?.module.Render) {
-				out.outlet = this.default.makeOutlet(args, out.outlet);
 				out.mask   = [...this.default.mask];
+				out.outlet = this.default.makeOutlet(args, out.outlet, out.mask.length);
 			}
 		} else {
 			const segment  = frags.splice(0, 1)[0];
@@ -200,7 +203,7 @@ export class RouteTree {
 		// Is this route masked out?
 		const ignored = out.mask.splice(0, 1)[0] === true;
 		if (!ignored && this.route) {
-			out.outlet = this.route.makeOutlet(args, out.outlet);
+			out.outlet = this.route.makeOutlet(args, out.outlet, out.mask.length);
 		}
 
 		return out;

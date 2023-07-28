@@ -35,9 +35,9 @@ export class Redirect {
 }
 
 export class Override {
-	data : BufferSource;
+	data : string | Buffer | Uint8Array;
 
-	constructor(data: BufferSource) {
+	constructor(data: string | Buffer | Uint8Array) {
 		this.data = data;
 	}
 }
@@ -45,7 +45,7 @@ export class Override {
 
 type MetaHTML = { [key: string]: string };
 
-const attrRegex = /[A-z]+/;
+const attrRegex = /^[A-z][A-z\-0-9]+$/;
 function ValidateMetaHTML(val: MetaHTML) {
 	for (const key in val) {
 		if (!attrRegex.test(key)) return false;

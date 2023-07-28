@@ -139,7 +139,7 @@ export class RouteTree {
 	}
 
 
-	render(req: http.IncomingMessage, res: http.ServerResponse, url: URL) {
+	async render(req: http.IncomingMessage, res: http.ServerResponse, url: URL) {
 		const args = new RenderArgs(req, res, url);
 
 		if (!this.default || !this.default.module.Render) {
@@ -151,10 +151,19 @@ export class RouteTree {
 			frags.splice(0, 1);
 		}
 
-		return this._recursiveRender(
-			args,
-			frags
-		).outlet();
+		try {
+			const out = await this._recursiveRender(
+				args,
+				frags
+			).outlet();
+
+			return out;
+		} catch (e: any) {
+			if (e instanceof Redirect) return e;
+			if (e instanceof Override) return e;
+
+			throw new Error(`Unhandled boil up type ${typeof(e)}: ${e}`);
+		};
 	}
 
 	private _recursiveRender(args: RenderArgs, frags: string[]) {

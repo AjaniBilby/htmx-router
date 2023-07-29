@@ -104,10 +104,12 @@ export class RouteTree {
 		}
 
 		if (path.length === 0) {
+			override.push(false);
 			this.route = new RouteLeaf(module, override);
 			return;
 		}
 		if (path.length === 1 && path[0] === "_index") {
+			override.push(false);
 			this.default = new RouteLeaf(module, override);
 			return;
 		}
@@ -274,7 +276,7 @@ function BuildOutlet(start: RouteTree, args: RenderArgs, fromPath: string) {
 	}
 
 	if (matching) {
-		depth = args._outletChain.length;
+		depth = args._outletChain.length-1;
 	}
 
 	args._applyMask(mask as boolean[], depth);

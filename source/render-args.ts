@@ -54,7 +54,7 @@ export class RenderArgs {
 		this._maxChain = 0;
 	}
 
-	addLinks(links: MetaHTML[], override: boolean = false) {
+	addLinks = (links: MetaHTML[], override: boolean = false) => {
 		if (!ValidateMetaHTMLs(links))
 			throw new Error(`Provided links have invalid attribute`);
 
@@ -65,7 +65,7 @@ export class RenderArgs {
 		}
 	}
 
-	addMeta(links: MetaHTML[], override: boolean = false) {
+	addMeta = (links: MetaHTML[], override: boolean = false) => {
 		if (!ValidateMetaHTMLs(links))
 			throw new Error(`Provided links have invalid attribute`);
 
@@ -98,7 +98,10 @@ export class RenderArgs {
 
 	_applyMask(mask: boolean[], depth: number) {
 		const padded = new Array(this._outletChain.length - mask.length).fill(false);
-		padded.push(...mask);
+
+		for (let i=mask.length-1; i>=0; i--) {
+			padded.push(mask[i])
+		}
 
 		this._maskChain = padded
 			.map((x, i) =>
@@ -111,7 +114,7 @@ export class RenderArgs {
 		this._maxChain = this._maskChain.length;
 	}
 
-	renderHeadHTML() {
+	renderHeadHTML = () => {
 		let out = "";
 
 		for (const elm of this.links) {

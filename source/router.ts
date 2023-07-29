@@ -1,12 +1,17 @@
 import type http from "node:http";
 import {
 	ErrorResponse,
-	Outlet,
 	Override,
 	Redirect,
-	RenderArgs,
 	RouteModule
 } from "./shared";
+
+import {
+	MaskType,
+	RenderArgs
+} from "./render-args";
+
+import * as BlankRoute from "./404-route";
 
 export function IsAllowedExt(ext: string) {
 	if (ext[0] !== ".") return false;
@@ -23,12 +28,7 @@ export function IsAllowedExt(ext: string) {
 }
 
 
-async function blankOutlet() {
-	return "";
-}
-
-
-class RouteLeaf {
+export class RouteLeaf {
 	module : RouteModule;
 	mask   : boolean[];
 
@@ -37,30 +37,35 @@ class RouteLeaf {
 		this.mask   = mask;
 	}
 
-	makeOutlet(args: RenderArgs, outlet: Outlet, depth: number): Outlet {
-		const routeName = `hx-route-${depth.toString(16)}`;
-		const renderer = this.module.Render || blankOutlet;
-		const catcher  = this.module.CatchError;
-
-		return async () => {
-			try {
-				return await renderer(routeName, args, outlet);
-			} catch (e) {
-				if (e instanceof Redirect || e instanceof Override)
-					throw e;
-
-				const err = (e instanceof ErrorResponse) ? e :
-					new ErrorResponse(500, "Runtime Error", e);
-
-				if (catcher) {
-					return await catcher(routeName, args, err);
-				}
-
-				throw err;
+	async render(args: RenderArgs, mask: MaskType, routeName: string): Promise<string> {
+		try {
+			if (this.module.Auth)
+				return await this.module.Auth(args);
+			if (mask === MaskType.show) {
+				if (this.module.Render)
+					return await this.module.Render(routeName, args);
+			} else {
+				return await args.Outlet();
 			}
+		} catch (e) {
+			if (e instanceof Redirect || e instanceof Override)
+				throw e;
+
+			const err = (e instanceof ErrorResponse) ? e :
+				new ErrorResponse(500, "Runtime Error", e);
+
+			if (this.module.CatchError)
+				return await this.module.CatchError(routeName, args, err);
+
+			throw err;
 		}
+
+		return "";
 	}
 }
+
+
+const blankLeaf = new RouteLeaf(BlankRoute, []);
 
 
 export class RouteTree {
@@ -165,37 +170,27 @@ export class RouteTree {
 
 
 	async render(req: http.IncomingMessage, res: http.ServerResponse, url: URL) {
+		if (url.pathname.length != 1 && url.pathname.endsWith("/")) {
+			return new Redirect(url.pathname.slice(0, -1) + url.search);
+		}
+
 		const args = new RenderArgs(req, res, url);
 
-		const frags = url.pathname.split('/').slice(1);
-		if (frags.length === 1 && frags[0] === "") {
-			frags.splice(0, 1);
-		}
-
-		let depth = 0;
-		if (req.headers['hx-headless']) {
-			let from = new URL(req.headers['hx-current-url']?.toString() || "/").pathname;
-			if (from[from.length] == "/") {
-				from = from.slice(0, 1);
-			}
-			const fromFrag = from.split("/").slice(1);
-
-			console.log(182, fromFrag, frags);
-			depth = this.calculateDepth(fromFrag, [...frags]);
-			console.log(184, depth);
-			res.setHeader('HX-Replace-Url', req.url || "/");
-			res.setHeader('HX-Retarget', `#hx-route-1`);
-			res.setHeader('HX-Reswap', "outerHTML");
-		}
+		const from = req.headers['hx-headless'] ?
+			new URL(req.headers['hx-current-url']?.toString() || "/").pathname :
+			"";
 
 		try {
-			const out = await this._recursiveRender(
-				args,
-				frags,
-				depth
-			).outlet();
+			const depth = BuildOutlet(this, args, from);
+			if (from) {
+				res.setHeader('HX-Replace-Url', req.url || "/");
+				if (depth > 0) {
+					res.setHeader('HX-Retarget', `#hx-route-${depth.toString(16)}`);
+				}
+				res.setHeader('HX-Reswap', "outerHTML");
+			}
 
-			return out;
+			return await args.Outlet();
 		} catch (e: any) {
 			if (e instanceof Redirect) return e;
 			if (e instanceof Override) return e;
@@ -204,46 +199,84 @@ export class RouteTree {
 			throw new Error(`Unhandled boil up type ${typeof(e)}: ${e}`);
 		};
 	}
+}
 
-	private _recursiveRender(args: RenderArgs, frags: string[], head: number) {
-		let out = {
-			outlet: blankOutlet,
-			mask: [] as boolean[],
-		};
-
-		if (frags.length == 0) {
-			if (!this.default) {
-				out.outlet = () => { throw new ErrorResponse(404, "Resource Not Found",
-					`Unable to find ${args.url.pathname}`
-				)}
-			} else if (this.default?.module.Render) {
-				out.mask   = [...this.default.mask];
-				out.outlet = this.default.makeOutlet(args, out.outlet, out.mask.length);
-			}
-		} else {
-			const segment  = frags.splice(0, 1)[0];
-			const subRoute = this.nested.get(segment);
-
-			if (subRoute) {
-				out = subRoute._recursiveRender(args, frags, head);
-			} else if (this.wild) {
-				args.params[this.wildCard] = segment;
-				out = this.wild._recursiveRender(args, frags, head);
-			} else {
-				out.outlet = () => { throw new ErrorResponse(404, "Resource Not Found",
-					`Unable to find ${args.url.pathname}`
-				)}
-			}
-		}
-
-		// Is this route masked out?
-		const ignored = out.mask.splice(0, 1)[0] === true || out.mask.length < head;
-		if (this.route) {
-			if (!ignored) {
-				out.outlet = this.route.makeOutlet(args, out.outlet, out.mask.length);
-			}
-		}
-
-		return out;
+function BuildOutlet(start: RouteTree, args: RenderArgs, fromPath: string) {
+	const frags = args.url.pathname.split('/').slice(1);
+	if (frags.length === 1 && frags[0] === "") {
+		frags.splice(0, 1);
 	}
+	const from = fromPath.split('/').slice(1);
+	if (from.length === 1 && from[0] === "") {
+		from.splice(0, 1);
+	}
+
+	let matching = fromPath.length > 0;
+	let depth = -1;
+
+	const stack: RouteTree[] = [start];
+	let mask: null | boolean[] = null;
+
+	while (stack.length > 0) {
+		const cursor = stack.pop() as RouteTree;
+		if (!mask) {
+			stack.push(cursor);
+
+			if (frags.length === 0) {
+				if (matching && from.length !== 0) {
+					depth = args._outletChain.length + stack.length;
+					matching = false;
+				};
+
+				if (cursor.default) {
+					args._addOutlet(cursor.default);
+					mask = cursor.default.mask;
+				} else {
+					args._addOutlet(blankLeaf);
+					mask = [];
+				}
+			} else {
+				if (matching && from.length === 0) {
+					depth = args._outletChain.length + stack.length;
+					matching = false;
+				}
+
+				const segment  = frags.splice(0, 1)[0];
+				const other    = from.splice(0, 1)[0];
+				const subRoute = cursor.nested.get(segment);
+
+				if (subRoute) {
+					if (matching && segment !== other) {
+						depth = args._outletChain.length + stack.length;
+						matching = false;
+					};
+
+					stack.push(subRoute);
+				} else if (cursor.wild) {
+					if (matching && cursor.nested.has(other)) {
+						depth = args._outletChain.length + stack.length;
+						matching = false;
+					};
+
+					args.params[cursor.wildCard] = segment;
+					stack.push(cursor.wild);
+				} else {
+					args._addOutlet(blankLeaf);
+					mask = [];
+				}
+			}
+
+		} else {
+			if (cursor.route) {
+				args._addOutlet(cursor.route);
+			}
+		}
+	}
+
+	if (matching) {
+		depth = args._outletChain.length;
+	}
+
+	args._applyMask(mask as boolean[], depth);
+	return depth;
 }

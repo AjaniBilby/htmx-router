@@ -185,14 +185,28 @@ export class RouteTree {
 		try {
 			const depth = BuildOutlet(this, args, from);
 			if (from) {
-				res.setHeader('HX-Replace-Url', req.url || "/");
+				res.setHeader('HX-Push-Url', req.url || "/");
 				if (depth > 0) {
 					res.setHeader('HX-Retarget', `#hx-route-${depth.toString(16)}`);
 				}
 				res.setHeader('HX-Reswap', "outerHTML");
 			}
 
-			return await args.Outlet();
+			const out = await args.Outlet();
+
+			if (args.title) {
+				const trigger = res.getHeader('HX-Trigger');
+				const entry   = `{"setTitle":"${args.title.replace(/"/g, `\\"`)}"}`;
+				if (Array.isArray(trigger)) {
+					res.setHeader('HX-Trigger', [...trigger, entry]);
+				} else if (trigger) {
+					res.setHeader('HX-Trigger', [trigger.toString(), entry]);
+				} else {
+					res.setHeader('HX-Trigger', [entry]);
+				}
+			}
+
+			return out;
 		} catch (e: any) {
 			if (e instanceof Redirect) return e;
 			if (e instanceof Override) return e;

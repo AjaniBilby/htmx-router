@@ -3,6 +3,13 @@ import { RouteLeaf } from "./router";
 
 type MetaHTML = { [key: string]: string };
 
+const titleScript =
+	`<script>`+
+	`document.addEventListener("DOMContentLoaded",function(){`+
+		`document.body.addEventListener("setTitle",function(evt){document.title = evt.detail.value;})`+
+	`});`+
+	`</script>`;
+
 const attrRegex = /^[A-z][A-z\-0-9]+$/;
 function ValidateMetaHTML(val: MetaHTML) {
 	for (const key in val) {
@@ -28,6 +35,7 @@ export enum MaskType {
 export class RenderArgs {
 	req: http.IncomingMessage;
 	res: http.ServerResponse;
+	title: string;
 	params: MetaHTML;
 	url: URL;
 
@@ -45,6 +53,7 @@ export class RenderArgs {
 		this.url = url;
 		this.params = {};
 
+		this.title  = "";
 		this.shared = {};
 		this.links = [];
 		this.meta  = [];
@@ -52,6 +61,10 @@ export class RenderArgs {
 		this._outletChain = [];
 		this._maskChain = [];
 		this._maxChain = 0;
+	}
+
+	setTitle = (value: string) => {
+		this.title = value;
 	}
 
 	addLinks = (links: MetaHTML[], override: boolean = false) => {
@@ -133,6 +146,6 @@ export class RenderArgs {
 			out += "></meta>";
 		}
 
-		return out;
+		return out+titleScript;
 	}
 }

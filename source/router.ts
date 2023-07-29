@@ -38,13 +38,13 @@ class RouteLeaf {
 	}
 
 	makeOutlet(args: RenderArgs, outlet: Outlet, depth: number): Outlet {
+		const routeName = `hx-route-${depth.toString(16)}`;
 		const renderer = this.module.Render || blankOutlet;
 		const catcher  = this.module.CatchError;
 
 		return async () => {
 			try {
-				args.depth = depth;
-				return await renderer(args, outlet);
+				return await renderer(routeName, args, outlet);
 			} catch (e) {
 				if (e instanceof Redirect || e instanceof Override)
 					throw e;
@@ -53,8 +53,7 @@ class RouteLeaf {
 					new ErrorResponse(500, "Runtime Error", e);
 
 				if (catcher) {
-					args.depth = depth;
-					return await catcher(args, err);
+					return await catcher(routeName, args, err);
 				}
 
 				throw err;
@@ -142,22 +141,58 @@ export class RouteTree {
 	}
 
 
+	calculateDepth(from: string[], to: string[]): number {
+		let depth = 0;
+		if (from.length == 0 || to.length == 0) {
+			depth = 1;
+		} else {
+			const segmentA = from.splice(0, 1)[0];
+			const segmentB = to.splice(0, 1)[0];
+			const subRoute = this.nested.get(segmentA);
+
+			if (subRoute && segmentA === segmentB) {
+				depth = subRoute.calculateDepth(from, to);
+			} else if (this.wild) {
+				depth = this.wild.calculateDepth(from, to);
+			} else {
+				return 1;
+			}
+		}
+
+		depth++;
+		return depth;
+	}
+
+
 	async render(req: http.IncomingMessage, res: http.ServerResponse, url: URL) {
 		const args = new RenderArgs(req, res, url);
-
-		if (!this.default || !this.default.module.Render) {
-			return "";
-		}
 
 		const frags = url.pathname.split('/').slice(1);
 		if (frags.length === 1 && frags[0] === "") {
 			frags.splice(0, 1);
 		}
 
+		let depth = 0;
+		if (req.headers['hx-headless']) {
+			let from = new URL(req.headers['hx-current-url']?.toString() || "/").pathname;
+			if (from[from.length] == "/") {
+				from = from.slice(0, 1);
+			}
+			const fromFrag = from.split("/").slice(1);
+
+			console.log(182, fromFrag, frags);
+			depth = this.calculateDepth(fromFrag, [...frags]);
+			console.log(184, depth);
+			res.setHeader('HX-Replace-Url', req.url || "/");
+			res.setHeader('HX-Retarget', `#hx-route-1`);
+			res.setHeader('HX-Reswap', "outerHTML");
+		}
+
 		try {
 			const out = await this._recursiveRender(
 				args,
-				frags
+				frags,
+				depth
 			).outlet();
 
 			return out;
@@ -165,11 +200,12 @@ export class RouteTree {
 			if (e instanceof Redirect) return e;
 			if (e instanceof Override) return e;
 
+			console.error(e);
 			throw new Error(`Unhandled boil up type ${typeof(e)}: ${e}`);
 		};
 	}
 
-	private _recursiveRender(args: RenderArgs, frags: string[]) {
+	private _recursiveRender(args: RenderArgs, frags: string[], head: number) {
 		let out = {
 			outlet: blankOutlet,
 			mask: [] as boolean[],
@@ -189,10 +225,10 @@ export class RouteTree {
 			const subRoute = this.nested.get(segment);
 
 			if (subRoute) {
-				out = subRoute._recursiveRender(args, frags);
+				out = subRoute._recursiveRender(args, frags, head);
 			} else if (this.wild) {
 				args.params[this.wildCard] = segment;
-				out = this.wild._recursiveRender(args, frags);
+				out = this.wild._recursiveRender(args, frags, head);
 			} else {
 				out.outlet = () => { throw new ErrorResponse(404, "Resource Not Found",
 					`Unable to find ${args.url.pathname}`
@@ -201,9 +237,11 @@ export class RouteTree {
 		}
 
 		// Is this route masked out?
-		const ignored = out.mask.splice(0, 1)[0] === true;
-		if (!ignored && this.route) {
-			out.outlet = this.route.makeOutlet(args, out.outlet, out.mask.length);
+		const ignored = out.mask.splice(0, 1)[0] === true || out.mask.length < head;
+		if (this.route) {
+			if (!ignored) {
+				out.outlet = this.route.makeOutlet(args, out.outlet, out.mask.length);
+			}
 		}
 
 		return out;

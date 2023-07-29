@@ -44,7 +44,7 @@ function readDirRecursively(dir: string) {
 	script += "\tconst ext = extname(file);\n";
 	script += "\tif (!IsAllowedExt(ext)) continue;\n";
 	script += "\tconst url = relative(ctx, file.slice(0, file.lastIndexOf(\".\")).replace(/\\\\/g, \"/\"));\n";
-	script += `\timport(file).then((mod) => Router.ingest(url, mod, []));\n`
+	script += `\timport(file).then((mod) => Router.ingest(url, mod, [false]));\n`
 	script += "}\n";
 
 	writeFileSync(`${cwd}/router.ts`, script);

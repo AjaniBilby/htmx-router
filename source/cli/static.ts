@@ -51,7 +51,7 @@ export function BuildStatic(cwd: string) {
 	script += `\nexport const Router = new RouteTree();\n`;
 	for (let i=0; i<files.length; i++) {
 		const file = files[i];
-		script += `Router.ingest("${file.slice(DIR.length-1)}", Route${i}, []);\n`;
+		script += `Router.ingest("${file.slice(DIR.length-1)}", Route${i}, [false]);\n`;
 	}
 	script += `Router.assignRoot(RootRoute);\n`
 

@@ -10,5 +10,7 @@ export function Link(props: {
 		style={props.style || ""}
 		href={props.to}
 		hx-get={props.to}
+		// Chrome doesn't support 'Vary' headers for effective caching
+		hx-headers='{"Cache-Control": "no-cache"}'
 	>{contents}</a>
 }

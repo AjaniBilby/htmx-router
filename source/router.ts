@@ -39,8 +39,10 @@ export class RouteLeaf {
 
 	async render(args: RenderArgs, mask: MaskType, routeName: string): Promise<string> {
 		try {
-			if (this.module.Auth)
-				return await this.module.Auth(args);
+			// Always check auth
+			// If auth error this function will throw
+			if (this.module.Auth) await this.module.Auth(args);
+
 			if (mask === MaskType.show) {
 				if (this.module.Render)
 					return await this.module.Render(routeName, args);

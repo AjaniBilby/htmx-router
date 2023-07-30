@@ -5,7 +5,7 @@ import { RenderArgs } from "./render-args";
 export type Outlet = () => Promise<string>;
 export type CatchFunction  = (routeName: string, args: RenderArgs, err: ErrorResponse) => Promise<string>;
 export type RenderFunction = (routeName: string, args: RenderArgs) => Promise<string>;
-export type AuthFunction   = (args: RenderArgs) => Promise<string>;
+export type AuthFunction   = (args: RenderArgs) => Promise<void>;
 export type RouteModule = {
 	Render?:     RenderFunction;
 	CatchError?: CatchFunction;

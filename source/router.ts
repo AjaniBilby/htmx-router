@@ -185,6 +185,7 @@ export class RouteTree {
 		try {
 			const depth = BuildOutlet(this, args, from);
 			if (from) {
+				res.setHeader('Vary', "HX-Push-Url");
 				res.setHeader('HX-Push-Url', req.url || "/");
 				if (depth > 0) {
 					res.setHeader('HX-Retarget', `#hx-route-${depth.toString(16)}`);

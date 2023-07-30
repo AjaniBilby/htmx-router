@@ -10,6 +10,5 @@ export function Link(props: {
 		style={props.style || ""}
 		href={props.to}
 		hx-get={props.to}
-		hx-headers='{"hx-headless": "true"}'
 	>{contents}</a>
 }

@@ -1,4 +1,6 @@
+import * as elements from 'typed-html';
 import type http from "node:http";
+
 import { RouteLeaf } from "./router";
 
 type MetaHTML = { [key: string]: string };
@@ -128,7 +130,7 @@ export class RenderArgs {
 	}
 
 	renderHeadHTML = () => {
-		let out = "";
+		let out = <title>{this.title}</title>;
 
 		for (const elm of this.links) {
 			out += "<link";

@@ -10,8 +10,8 @@
 		"moduleResolution": "Node",
 		"esModuleInterop": true,
 
-		"jsx": "react",
 		"jsxFactory": "elements.createElement",
+		"jsx": "react",
 
 		/* Generates corresponding '.d.ts' file. */
 		"declaration": true,

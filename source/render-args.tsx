@@ -8,7 +8,7 @@ type MetaHTML = { [key: string]: string };
 const titleScript =
 	`<script>`+
 	`document.addEventListener("DOMContentLoaded",function(){`+
-		`document.body.addEventListener("setTitle",function(evt){document.title = evt.detail.value;})`+
+		`document.body.addEventListener("setTitle",function(evt){document.title=decodeURIComponent(evt.detail.value);})`+
 	`});`+
 	`</script>`;
 

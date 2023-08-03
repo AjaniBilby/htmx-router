@@ -199,7 +199,7 @@ export class RouteTree {
 
 			if (args.title) {
 				const trigger = res.getHeader('HX-Trigger');
-				const entry   = `{"setTitle":"${args.title.replace(/"/g, `\\"`)}"}`;
+				const entry   = `{"setTitle":"${encodeURIComponent(args.title)}"}`;
 				if (Array.isArray(trigger)) {
 					res.setHeader('HX-Trigger', [...trigger, entry]);
 				} else if (trigger) {

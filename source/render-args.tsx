@@ -112,7 +112,9 @@ export class RenderArgs {
 	}
 
 	_applyMask(mask: boolean[], depth: number) {
-		const padded = new Array(this._outletChain.length - mask.length).fill(false);
+		const padded = new Array(Math.max(0,
+			this._outletChain.length - mask.length
+		)).fill(false);
 
 		for (let i=mask.length-1; i>=0; i--) {
 			padded.push(mask[i])

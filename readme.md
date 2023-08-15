@@ -4,31 +4,31 @@
 
 This library attempts to be as unopinionated as possible allowing for multiple escape hatches in-case there are certain times you want a different style of behaviour.
 
-This library does not rely on any heavy weight dependencies such as react, instead opting to be built on the lighter weight [typed-html](https://www.npmjs.com/package/typed-html) library for it's JSX rendering, and using [csstype](https://www.npmjs.com/package/csstype), just as a type interface to improve developer ergonomics.
+This library does not rely on any heavy weight dependencies such as react, instead opting to be built on the lighter weight [kitajs/html](https://kitajs.github.io/html/) library for it's JSX rendering, and using [csstype](https://www.npmjs.com/package/csstype), just as a type interface to improve developer ergonomics.
 
 You can also see an example site running this library [here](https://github.com/AjaniBilby/predictable) with source code as an extra helpful example. Please be mindful the slow loading of this site is actually due to Discord APIs, and the rendering is taking less than 2ms on a raspberry pi on my floor.
 
 - [htmX Router](#htmx-router)
-  - [Routes](#routes)
-    - [Module Layout](#module-layout)
-      - [Auth Function](#auth-function)
-      - [Render Function](#render-function)
-      - [CatchError Function](#catcherror-function)
-  - [Router](#router)
-  - [Types](#types)
-    - [RenderArgs](#renderargs)
-      - [Outlet](#outlet)
-      - [setTitle](#settitle)
-      - [addMeta](#addmeta)
-      - [addLinks](#addlinks)
-      - [renderHeadHTML](#renderheadhtml)
-      - [shared](#shared)
-    - [ErrorResponse](#errorresponse)
-    - [Override](#override)
-    - [Redirect](#redirect)
-  - [Components](#components)
-    - [Link](#link)
-  - [StyleCSS](#stylecss)
+	- [Routes](#routes)
+		- [Module Layout](#module-layout)
+			- [Auth Function](#auth-function)
+			- [Render Function](#render-function)
+			- [CatchError Function](#catcherror-function)
+	- [Router](#router)
+	- [Types](#types)
+		- [RenderArgs](#renderargs)
+			- [Outlet](#outlet)
+			- [setTitle](#settitle)
+			- [addMeta](#addmeta)
+			- [addLinks](#addlinks)
+			- [renderHeadHTML](#renderheadhtml)
+			- [shared](#shared)
+		- [ErrorResponse](#errorresponse)
+		- [Override](#override)
+		- [Redirect](#redirect)
+	- [Components](#components)
+		- [Link](#link)
+	- [StyleCSS](#stylecss)
 
 ## Routes
 
@@ -266,7 +266,9 @@ This element will encode as a standard `<a>` with some extra html attributes, me
 
 ## StyleCSS
 
-This is a helper function allowing you to give it a [CSS.Properties](https://www.npmjs.com/package/csstype) type, and render it into a string for [typed-html](https://www.npmjs.com/package/typed-html) to use.
+> **DEPRECATED**: If you utilize `@kitajs/html` instead of `typed-html` this function is no longer needed
+
+This is a helper function allowing you to give it a [CSS.Properties](https://www.npmjs.com/package/csstype) type, and render it into a string for [kitajs/html](https://kitajs.github.io/html/) to use.
 ```tsx
 <div style={StyleCSS({
   height: "100%",

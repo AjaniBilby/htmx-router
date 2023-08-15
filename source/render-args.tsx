@@ -1,5 +1,5 @@
-import * as elements from 'typed-html';
 import type http from "node:http";
+import html from '@kitajs/html';
 
 import { RouteLeaf } from "./router";
 

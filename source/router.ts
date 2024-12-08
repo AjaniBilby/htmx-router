@@ -1,5 +1,5 @@
 import * as endpoint from '~/util/endpoint.js';
-// import * as dynamic from '~/util/dynamic.js';
+import * as dynamic from '~/util/dynamic.js';
 import * as css from '~/util/css.js';
 
 import { RouteModule } from "~/types.js";
@@ -210,7 +210,7 @@ function BadResponse(res: Response | null) {
 
 async function ResolveNatively(fragments: string[], ctx: RouteContext): Promise<Response | null> {
 	switch (fragments[1]) {
-		// case "dynamic":  return dynamic._resolve(fragments, ctx);
+		case "dynamic":  return dynamic._resolve(fragments, ctx);
 		case "endpoint": return endpoint._resolve(fragments, ctx);
 		case "style":    return css._resolve(fragments);
 	}

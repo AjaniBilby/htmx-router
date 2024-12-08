@@ -20,14 +20,12 @@
 		"url": "https://github.com/AjaniBilby/htmx-router/issues"
 	},
 	"homepage": "https://github.com/AjaniBilby/htmx-router#readme",
+	"dependencies": {  },
 	"devDependencies": {
 		"@types/node": "^20.4.5",
 		"ts-node": "^10.9.1",
 		"tsc-alias": "^1.8.10",
-		"typescript": "^5.1.6"
-	},
-	"dependencies": {
-		"@kitajs/html": "^1.4.2",
-		"csstype": "^3.1.2"
+		"typescript": "^5.1.6",
+		"vite": "^6.0.1"
 	}
 }

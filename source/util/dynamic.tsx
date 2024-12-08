@@ -1,5 +1,5 @@
-import { RouteContext } from "~/router";
-import { QuickHash } from "~/util/hash";
+import { RouteContext } from "~/router.js";
+import { QuickHash } from "~/util/hash.js";
 
 const registry = new Map<string, Loader<unknown>>();
 

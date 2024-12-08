@@ -1,9 +1,9 @@
-import * as endpoint from '~/util/endpoint';
-import * as dynamic from '~/util/dynamic';
-import * as css from '~/util/css';
+import * as endpoint from '~/util/endpoint.js';
+// import * as dynamic from '~/util/dynamic.js';
+import * as css from '~/util/css.js';
 
-import { RouteModule } from "~/shared";
-import { Cookies } from '~/util/cookies';
+import { RouteModule } from "~/types.js";
+import { Cookies } from '~/util/cookies.js';
 
 export class RouteContext {
 	request: Request;
@@ -210,7 +210,7 @@ function BadResponse(res: Response | null) {
 
 async function ResolveNatively(fragments: string[], ctx: RouteContext): Promise<Response | null> {
 	switch (fragments[1]) {
-		case "dynamic":  return dynamic._resolve(fragments, ctx);
+		// case "dynamic":  return dynamic._resolve(fragments, ctx);
 		case "endpoint": return endpoint._resolve(fragments, ctx);
 		case "style":    return css._resolve(fragments);
 	}

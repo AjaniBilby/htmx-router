@@ -1,6 +1,6 @@
-import { RenderFunction } from "~/shared";
-import { RouteContext } from "~/router";
-import { QuickHash } from "~/util/hash";
+import { RenderFunction } from "~/types.js";
+import { RouteContext } from "~/router.js";
+import { QuickHash } from "~/util/hash.js";
 
 const registry = new Map<string, Endpoint>();
 

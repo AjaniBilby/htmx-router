@@ -3,15 +3,17 @@
 		/* Visit https://aka.ms/tsconfig to read more about this file */
 
 		/* Language and Environment */
-		"target": "ES2018",
+		"target": "ES2022",
 
 		/* Modules */
-		"module": "CommonJS",
+		"module": "ES2022",
+		"emitDeclarationOnly": false,
 		"moduleResolution": "Node",
 		"esModuleInterop": true,
 
-		"reactNamespace": "html",
-		"jsx": "react",
+		"jsx": "preserve",
+		"jsxFactory": "JSX.createElement",
+		"jsxFragmentFactory": "JSX.Fragment",
 
 		/* Generates corresponding '.d.ts' file. */
 		"declaration": true,
@@ -30,8 +32,12 @@
 		// "skipDefaultLibCheck": true,                      /* Skip type checking .d.ts files that are included with TypeScript. */
 		"skipLibCheck": true,                                /* Skip type checking all .d.ts files. */
 
-		"outDir": "./bin"
+		"outDir": "./bin",
+
+		"paths": {
+			"~/*": ["./source/*"]
+		},
 	},
-	"include": ["source"],
+	"include": ["source", "global.d.ts"],
 	"exclude": ["node_modules"]
 }

@@ -1,10 +1,11 @@
 {
 	"name": "htmx-router",
-	"version": "0.2.0",
+	"version": "1.0.0-pre1",
 	"description": "A remix.js style file path router for htmX websites",
 	"main": "./bin/index.js",
+	"type": "module",
 	"scripts": {
-		"build": "tsc"
+		"build": "tsc && tsc-alias"
 	},
 	"bin": {
 		"htmx-router": "bin/cli/index.js"
@@ -22,6 +23,7 @@
 	"devDependencies": {
 		"@types/node": "^20.4.5",
 		"ts-node": "^10.9.1",
+		"tsc-alias": "^1.8.10",
 		"typescript": "^5.1.6"
 	},
 	"dependencies": {

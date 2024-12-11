@@ -74,9 +74,6 @@ export class RouteLeaf {
 	}
 
 	private async renderWrapper(ctx: GenericContext) {
-		const t = ctx.shape({ age: Number, active: Boolean});
-		t.params.active
-
 		try {
 			if (!this.module.loader && !this.module.action) return null;
 

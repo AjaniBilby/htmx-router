@@ -4,7 +4,7 @@ import { createRequestHandler } from '~/request/index.js';
 
 import { GetSheetUrl, StyleClass } from '~/util/css.js';
 import { Cookies, CookieOptions } from "~/util/cookies.js";
-import { EventSourceConnection } from "~/util/event-source";
+import { EventSourceConnection } from "~/util/event-source.js";
 
 export {
 	CatchFunction,

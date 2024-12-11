@@ -2,7 +2,7 @@ import * as endpoint from '~/util/endpoint.js';
 import * as dynamic from '~/util/dynamic.js';
 import * as css from '~/util/css.js';
 
-import { Parameterize, Parameterized, ParameterShaper } from '~/util/parameters';
+import { Parameterize, Parameterized, ParameterShaper } from '~/util/parameters.js';
 import { RouteModule } from "~/types.js";
 import { Cookies } from '~/util/cookies.js';
 
@@ -122,14 +122,7 @@ export class RouteTree {
 	}
 
 	ingest(path: string | string[], module: RouteModule<any>) {
-		if (!Array.isArray(path)) {
-			if (!module.parameters) {
-				console.warn(`Route missing parameter definition\n  ${path}`);
-				return;
-			}
-
-			path = path.split("/");
-		}
+		if (!Array.isArray(path)) path = path.split("/");
 
 
 		if (path.length === 0 || (path.length == 1 && path[0] === "_index")) {

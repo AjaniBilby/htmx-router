@@ -7,8 +7,10 @@ export type ParameterShaper = Record<string, (val: string) => any>;
 export function Parameterize<T extends ParameterShaper>(params: { [key: string]: string }, shape: T): Parameterized<T> {
 	const out: Partial<Parameterized<T>> = {};
 	for (const key in shape) {
+		if (!(key in params)) console.warn(`Parameter ${key} not present in route, but defined in parameters`);
+
 		const func = shape[key];
-		const val = func(params[key]);
+		const val = func(params[key] || "");
 
 		// NaN moment
 		if ((func as unknown) === Number && typeof val === "number" && isNaN(val)) throw new Error("Invalid Number");

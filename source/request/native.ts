@@ -1,4 +1,4 @@
-import { RouteContext, RouteTree } from '~/router.js';
+import { GenericContext, RouteTree } from '~/router.js';
 import { Config, RouterModule } from '~/request/index.js';
 
 export function createRequestHandler(config: Config) {
@@ -35,7 +35,7 @@ export function createRequestHandler(config: Config) {
 
 export async function Resolve(request: Request, tree: RouteTree, config: Config) {
 	const url = new URL(request.url);
-	const ctx = new RouteContext(request, url, config.render);
+	const ctx = new GenericContext(request, url, config.render);
 
 	const x = ctx.url.pathname.endsWith("/") ? ctx.url.pathname.slice(0, -1) : ctx.url.pathname;
 	const fragments = x.split("/").slice(1);

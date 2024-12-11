@@ -1,13 +1,13 @@
 import type { ViteDevServer } from "vite";
 import { IncomingMessage, ServerResponse } from "http";
 
-import { RouteContext, RouteTree } from "~/router.js";
+import { GenericContext, RouteTree } from "~/router.js";
 import { Resolve } from "~/request/native.js";
 
 type Config = {
 	build: Promise<any> | (() => Promise<Record<string, any>>),
 	viteDevServer: ViteDevServer | null,
-	render: RouteContext["render"]
+	render: GenericContext["render"]
 };
 
 type RouterModule = { tree: RouteTree }

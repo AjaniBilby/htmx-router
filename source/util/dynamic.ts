@@ -1,4 +1,4 @@
-import { RouteContext } from "~/router.js";
+import { GenericContext } from "~/router.js";
 import { QuickHash } from "~/util/hash.js";
 
 const registry = new Map<string, Loader<unknown>>();
@@ -18,9 +18,9 @@ export function RegisterDynamic<T>(load: Loader<T>) {
 	return url;
 }
 
-type Loader<T> = (params: T, ctx: RouteContext) => Promise<JSX.Element>;
+type Loader<T> = (params: T, ctx: GenericContext) => Promise<JSX.Element>;
 
-export async function _resolve(fragments: string[], ctx: RouteContext) {
+export async function _resolve(fragments: string[], ctx: GenericContext) {
 	if (!fragments[2]) return null;
 
 	const endpoint = registry.get(fragments[2]);

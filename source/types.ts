@@ -1,13 +1,12 @@
-export type RenderArgs = {
-	request: Request,
-	params: { [key: string]: string }
-	url: URL
-};
+import { ParameterShaper } from "~/util/parameters";
+import { RouteContext } from "~/router";
 
-export type CatchFunction  = (args: RenderArgs, err: unknown) => Promise<Response | JSX.Element | null>;
-export type RenderFunction = (args: RenderArgs) => Promise<Response | JSX.Element | null>;
-export type RouteModule = {
-	loader?:  RenderFunction;
-	action?:  RenderFunction;
-	error?:   CatchFunction;
+export type CatchFunction<T> = (args: T, err: unknown) => Promise<Response | JSX.Element | null>;
+export type RenderFunction<T> = (args: T) => Promise<Response | JSX.Element | null>;
+
+export type RouteModule<T extends ParameterShaper> = {
+	parameters: T;
+	loader?:    RenderFunction<RouteContext<T>>;
+	action?:    RenderFunction<RouteContext<T>>;
+	error?:     CatchFunction <RouteContext<T>>;
 }

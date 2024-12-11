@@ -2,10 +2,11 @@ import * as endpoint from '~/util/endpoint.js';
 import * as dynamic from '~/util/dynamic.js';
 import * as css from '~/util/css.js';
 
+import { Parameterize, Parameterized, ParameterShaper } from '~/util/parameters';
 import { RouteModule } from "~/types.js";
 import { Cookies } from '~/util/cookies.js';
 
-export class RouteContext {
+export class GenericContext {
 	request: Request;
 	headers: Headers; // response headers
 	cookie: Cookies;
@@ -14,7 +15,7 @@ export class RouteContext {
 
 	render: (res: JSX.Element) => Response;
 
-	constructor(request: RouteContext["request"], url: RouteContext["url"], renderer: RouteContext["render"]) {
+	constructor(request: GenericContext["request"], url: GenericContext["url"], renderer: GenericContext["render"]) {
 		this.cookie = new Cookies(request.headers);
 		this.headers = new Headers();
 		this.request = request;
@@ -22,16 +23,39 @@ export class RouteContext {
 		this.url = url;
 		this.render = renderer;
 	}
+
+	shape<T extends ParameterShaper>(shape: T) {
+		return new RouteContext(this, shape);
+	}
+}
+
+export class RouteContext<T extends ParameterShaper> {
+	request: Request;
+	headers: Headers; // response headers
+	cookie: Cookies;
+	params: Parameterized<T>;
+	url: URL;
+
+	render: (res: JSX.Element) => Response;
+
+	constructor(base: GenericContext, shape: T) {
+		this.params = Parameterize(base.params, shape);
+		this.cookie  = base.cookie;
+		this.headers = base.headers;
+		this.request = base.request;
+		this.render = base.render;
+		this.url = base.url;
+	}
 }
 
 export class RouteLeaf {
-	module: RouteModule;
+	module: RouteModule<any>;
 
-	constructor(module: RouteModule) {
+	constructor(module: RouteModule<any>) {
 		this.module = module;
 	}
 
-	async resolve(ctx: RouteContext) {
+	async resolve(ctx: GenericContext) {
 		const res = await this.renderWrapper(ctx);
 		if (res === null) return null;
 		if (res instanceof Response) return res;
@@ -39,7 +63,7 @@ export class RouteLeaf {
 		return ctx.render(res);
 	}
 
-	async error(ctx: RouteContext, e: unknown) {
+	async error(ctx: GenericContext, e: unknown) {
 		if (!this.module.error) return null;
 
 		const res = await this.module.error(ctx, e);
@@ -49,18 +73,22 @@ export class RouteLeaf {
 		return ctx.render(res);
 	}
 
-	private async renderWrapper(ctx: RouteContext) {
+	private async renderWrapper(ctx: GenericContext) {
+		const t = ctx.shape({ age: Number, active: Boolean});
+		t.params.active
+
 		try {
+			if (!this.module.loader && !this.module.action) return null;
+
+			const context = ctx.shape(this.module.parameters || {});
+
 			if (ctx.request.method === "HEAD" || ctx.request.method === "GET") {
-				if (this.module.loader) return await this.module.loader(ctx);
+				if (this.module.loader) return await this.module.loader(context);
 				else return null;
-			} else {
-				if (this.module.action) return await this.module.action(ctx);
-				else {
-					if (this.module.loader) return null;
-					else throw new Response("Method not Allowed", { status: 405, statusText: "Method not Allowed"});
-				}
 			}
+
+			if (this.module.action) return await this.module.action(context);
+			throw new Response("Method not Allowed", { status: 405, statusText: "Method not Allowed"});
 		} catch (e) {
 			if (this.module.error) return await this.module.error(ctx, e);
 			else throw e;
@@ -93,8 +121,16 @@ export class RouteTree {
 		this.index = null;
 	}
 
-	ingest(path: string| string[], module: RouteModule) {
-		if (!Array.isArray(path)) path = path.split("/");
+	ingest(path: string | string[], module: RouteModule<any>) {
+		if (!Array.isArray(path)) {
+			if (!module.parameters) {
+				console.warn(`Route missing parameter definition\n  ${path}`);
+				return;
+			}
+
+			path = path.split("/");
+		}
+
 
 		if (path.length === 0 || (path.length == 1 && path[0] === "_index")) {
 			this.index = new RouteLeaf(module);
@@ -131,7 +167,7 @@ export class RouteTree {
 		next.ingest(path, module);
 	}
 
-	async resolve(fragments: string[], ctx: RouteContext): Promise<Response | null> {
+	async resolve(fragments: string[], ctx: GenericContext): Promise<Response | null> {
 		let res = await this.resolveNative(fragments, ctx)
 			|| await this.resolveIndex(fragments, ctx)
 			|| await this.resolveNext(fragments, ctx)
@@ -141,14 +177,14 @@ export class RouteTree {
 		return this.unwrap(ctx, res);
 	}
 
-	private async resolveIndex(fragments: string[], ctx: RouteContext): Promise<Response | null> {
+	private async resolveIndex(fragments: string[], ctx: GenericContext): Promise<Response | null> {
 		if (fragments.length > 0) return null;
 		if (!this.index) return null;
 
 		return await this.index.resolve(ctx);
 	}
 
-	private async resolveNext(fragments: string[], ctx: RouteContext): Promise<Response | null> {
+	private async resolveNext(fragments: string[], ctx: GenericContext): Promise<Response | null> {
 		if (fragments.length < 1) return null;
 
 
@@ -158,7 +194,7 @@ export class RouteTree {
 		return await next.resolve(fragments.slice(1), ctx);
 	}
 
-	private async resolveWild(fragments: string[], ctx: RouteContext): Promise<Response | null> {
+	private async resolveWild(fragments: string[], ctx: GenericContext): Promise<Response | null> {
 		if (!this.wild) return null;
 		if (fragments.length < 1) return null;
 
@@ -166,7 +202,7 @@ export class RouteTree {
 		return this.wild.resolve(fragments.slice(1), ctx);
 	}
 
-	private async resolveSlug(fragments: string[], ctx: RouteContext): Promise<Response | null> {
+	private async resolveSlug(fragments: string[], ctx: GenericContext): Promise<Response | null> {
 		if (!this.slug) return null;
 
 		ctx.params["$"] = fragments.join("/");
@@ -178,7 +214,7 @@ export class RouteTree {
 		return res;
 	}
 
-	private async resolveNative(fragments: string[], ctx: RouteContext): Promise<Response | null> {
+	private async resolveNative(fragments: string[], ctx: GenericContext): Promise<Response | null> {
 		if (!this.root) return null;
 		if (fragments.length < 2) return null;
 		if (fragments[0] != "_")  return null;
@@ -186,7 +222,7 @@ export class RouteTree {
 		return await ResolveNatively(fragments, ctx);
 	}
 
-	private async unwrap(ctx: RouteContext, res: Response | null): Promise<Response | null> {
+	private async unwrap(ctx: GenericContext, res: Response | null): Promise<Response | null> {
 		if (!BadResponse(res)) return res;
 		if (!this.slug) return res;
 
@@ -208,7 +244,7 @@ function BadResponse(res: Response | null) {
 	if (res.status > 299) return true;
 }
 
-async function ResolveNatively(fragments: string[], ctx: RouteContext): Promise<Response | null> {
+async function ResolveNatively(fragments: string[], ctx: GenericContext): Promise<Response | null> {
 	switch (fragments[1]) {
 		case "dynamic":  return dynamic._resolve(fragments, ctx);
 		case "endpoint": return endpoint._resolve(fragments, ctx);

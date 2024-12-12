@@ -85,7 +85,7 @@ export class RouteLeaf {
 			}
 
 			if (this.module.action) return await this.module.action(context);
-			throw new Response("Method not Allowed", { status: 405, statusText: "Method not Allowed"});
+			throw new Response("Method not Allowed", { status: 405, statusText: "Method not Allowed", headers: ctx.headers });
 		} catch (e) {
 			if (this.module.error) return await this.module.error(ctx, e);
 			else throw e;
@@ -216,7 +216,7 @@ export class RouteTree {
 		if (!BadResponse(res)) return res;
 		if (!this.slug) return res;
 
-		if (res === null) res = new Response("Not Found", { status: 404, statusText: "Not Found" });
+		if (res === null) res = new Response("Not Found", { status: 404, statusText: "Not Found", headers: ctx.headers });
 
 		if (res.headers.has("X-Caught")) return res;
 

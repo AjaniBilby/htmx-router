@@ -24,10 +24,10 @@ export function createRequestHandler(config: Config) {
 			if (e instanceof Error) {
 				console.error(e.stack);
 				config.viteDevServer?.ssrFixStacktrace(e);
-				return new Response(e.message + "\n" + e.stack, { status: 500, statusText: "Internal Server Error"});
+				return new Response(e.message + "\n" + e.stack, { status: 500, statusText: "Internal Server Error" });
 			} else {
 				console.error(e);
-				return new Response(String(e), { status: 500, statusText: "Internal Server Error"});
+				return new Response(String(e), { status: 500, statusText: "Internal Server Error" });
 			}
 		}
 	}
@@ -41,15 +41,18 @@ export async function Resolve(request: Request, tree: RouteTree, config: Config)
 	const fragments = x.split("/").slice(1);
 
 	let response = await tree.resolve(fragments, ctx);
-	if (response === null) response = new Response("Not Found", { status: 404, statusText: "Not Found" });
+	if (response === null) response = new Response("Not Found", { status: 404, statusText: "Not Found", headers: ctx.headers });
 
 	// Merge context headers
-	response.headers.forEach((val, key) => {
-		ctx.headers.set(key, val);
-	});
+	if (response.headers !== ctx.headers) {
+		for (const [key, value] of ctx.headers) {
+			if (response.headers.has(key)) continue;
+			response.headers.set(key, value);
+		}
+	}
 
 	// Merge cookie changes
-	const headers = Object.fromEntries(ctx.headers as any);
+	const headers: { [key: string]: string | string[] } = Object.fromEntries(ctx.headers as any);
 
 	const cookies = ctx.cookie.export();
 	if (cookies.length > 0) {

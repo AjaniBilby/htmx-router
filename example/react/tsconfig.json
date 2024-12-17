@@ -1,0 +1,43 @@
+{
+	"compilerOptions": {
+		"target": "ES2022",
+		"useDefineForClassFields": true,
+		"module": "ESNext",
+		"lib": ["DOM", "ES2022"],
+		"types": ["vite/client"],
+		"esModuleInterop": true,
+		"resolveJsonModule": true,
+
+		/* Bundler mode */
+		"moduleResolution": "bundler",
+		"allowImportingTsExtensions": true,
+		"isolatedModules": true,
+		"moduleDetection": "force",
+		"noEmit": true,
+
+		"jsx": "react-jsx",
+
+		/* Type Checking */
+		"strict": true,
+		"allowJs": true,
+		"noImplicitAny": true,                            /* Enable error reporting for expressions and declarations with an implied 'any' type. */
+		"strictNullChecks": true,                         /* When type checking, take into account 'null' and 'undefined'. */
+		"strictFunctionTypes": true,                      /* When assigning functions, check to ensure parameters and the return values are subtype-compatible. */
+		"strictBindCallApply": true,                      /* Check that the arguments for 'bind', 'call', and 'apply' methods match the original function. */
+		"strictPropertyInitialization": true,             /* Check for class properties that are declared but not set in the constructor. */
+		"noImplicitThis": true,                           /* Enable error reporting when 'this' is given the type 'any'. */
+		"useUnknownInCatchVariables": true,               /* Default catch clause variables as 'unknown' instead of 'any'. */
+		"forceConsistentCasingInFileNames": true,
+
+		/* Completeness */
+		"skipDefaultLibCheck": true,                      /* Skip type checking .d.ts files that are included with TypeScript. */
+		"skipLibCheck": true,                             /* Skip type checking all .d.ts files. */
+
+		"outDir": "./bin",
+		"paths": {
+			"~/*": ["./source/*"]
+		},
+	},
+	"include": ["source", "global.d.ts"],
+	"exclude": ["node_modules"]
+}

@@ -1,7 +1,7 @@
 {
 	"name": "htmx-router",
 	"version": "1.0.0-pre1",
-	"description": "A remix.js style file path router for htmX websites",
+	"description": "A simple SSR framework with dynamic+client islands",
 	"main": "./bin/index.js",
 	"type": "module",
 	"scripts": {

@@ -1,5 +1,6 @@
 import * as endpoint from '~/util/endpoint.js';
 import * as dynamic from '~/util/dynamic.js';
+import * as mount from '~/client/mount.js';
 import * as css from '~/util/css.js';
 
 import { Parameterize, Parameterized, ParameterShaper } from '~/util/parameters.js';
@@ -240,6 +241,7 @@ async function ResolveNatively(fragments: string[], ctx: GenericContext): Promis
 	switch (fragments[1]) {
 		case "dynamic":  return dynamic._resolve(fragments, ctx);
 		case "endpoint": return endpoint._resolve(fragments, ctx);
+		case "mount":    return mount._resolve(fragments);
 		case "style":    return css._resolve(fragments);
 	}
 

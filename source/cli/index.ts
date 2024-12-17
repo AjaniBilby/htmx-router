@@ -18,6 +18,8 @@ await writeFile(config.router.output, `/*---------------------------------------
 
 import { GenericContext, RouteTree } from "htmx-router/bin/router";
 import { RegisterDynamic } from "htmx-router/bin/util/dynamic";
+import { GetMountUrl } from 'htmx-router/bin/client/mount';
+import { GetSheetUrl } from 'htmx-router/bin/util/css';
 import { RouteModule } from "htmx-router";
 
 const modules = import.meta.glob('${routes}/**/*.{ts,tsx}', { eager: true });
@@ -31,10 +33,10 @@ for (const path in modules) {
 
 export function Dynamic<T extends Record<string, string>>(props: {
 	params: T,
-	load: (params: T, ctx: GenericContext) => Promise<JSX.Element>
+	loader: (params: T, ctx: GenericContext) => Promise<JSX.Element>
 	children?: JSX.Element
 }): JSX.Element {
-	const path = RegisterDynamic(props.load);
+	const path = RegisterDynamic(props.loader);
 
 	const query = new URLSearchParams();
 	for (const key in props.params) query.set(key, props.params[key]);
@@ -46,6 +48,13 @@ export function Dynamic<T extends Record<string, string>>(props: {
 		hx-swap="outerHTML transition:true"
 		style={{ display: "contents" }}
 	>{props.children ? props.children : ""}</div>
+}
+
+export function RouteHeaders() {
+	return <>
+		<link href={GetSheetUrl()} rel="stylesheet"></link>
+		<script src={GetMountUrl()}></script>
+	</>
 }`);
 
 

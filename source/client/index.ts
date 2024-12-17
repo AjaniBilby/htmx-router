@@ -2,6 +2,7 @@ import { readFile, writeFile } from "fs/promises";
 import { init, parse } from "es-module-lexer";
 
 import { QuickHash } from "~/util/hash.js";
+import { CutString } from "~/helper.js";
 
 const pivot = `\n// DO NOT EDIT BELOW THIS LINE\n`;
 
@@ -41,7 +42,7 @@ function BuildClientServer(names: string[]) {
 	let out = "type FirstArg<T> = T extends (arg: infer U, ...args: any[]) => any ? U : never;\n"
 		+ "function mount(name: string, data: string, ssr?: JSX.Element) {\n"
 		+ "\treturn (<>\n"
-		+ "\t\t{ssr || <div></div>}\n"
+		+ `\t\t<div style={{ display: "contents" }}>{ssr}</div>\n`
 		+ "\t\t<script>{`Router.mountAboveWith(\"${name}\", JSON.parse(\"${data}\"))`}</script>\n"
 		+ "\t</>);\n"
 		+ "}\n"
@@ -49,9 +50,9 @@ function BuildClientServer(names: string[]) {
 		+ "const Client = {\n";
 
 	for (const name of names) {
-		out += `\t${name}: function(props: FirstArg<typeof ${name}> & { _ssr?: JSX.Element }) {\n`
-			+ `\t\tconst { _ssr, ...rest } = props;\n`
-			+ `\t\treturn mount("${name}", JSON.stringify(rest), _ssr);\n`
+		out += `\t${name}: function(props: FirstArg<typeof ${name}> & { children?: JSX.Element }) {\n`
+			+ `\t\tconst { children, ...rest } = props;\n`
+			+ `\t\treturn mount("${name}", JSON.stringify(rest), children);\n`
 			+ `\t},\n`
 	}
 
@@ -113,38 +114,6 @@ function ExtractName (str: string) {
 	const parts = CutString(str, "as");
 	if (parts[1]) return parts[1].trim();
 	return parts[0].trim();
-}
-
-
-
-function CutString(str: string, pivot: string, offset = 1): [string, string] {
-	if (offset > 0) {
-		let cursor = 0;
-		while (offset !== 0) {
-			const i = str.indexOf(pivot, cursor);
-			if (i === -1) return [str, ""];
-			cursor = i+1;
-			offset--;
-		}
-		cursor--;
-
-		return [str.slice(0, cursor), str.slice(cursor+pivot.length)];
-	}
-
-	if (offset < 0) {
-		let cursor = str.length;
-		while (offset !== 0) {
-			const i = str.lastIndexOf(pivot, cursor);
-			if (i === -1) return [str, ""];
-			cursor = i-1;
-			offset++;
-		}
-		cursor++;
-
-		return [str.slice(0, cursor), str.slice(cursor+pivot.length)];
-	}
-
-	return [str, ""];
 }
 
 

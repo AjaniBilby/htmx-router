@@ -40,7 +40,7 @@ function ClientMounter() {
 		if (mountRequests.length < 1) return;
 		if (!global.CLIENT) throw new Error("Client manifest missing");
 
-		console.log("hydrating...");
+		console.info("hydrating...");
 		for (const [ funcName, element, json ] of mountRequests) {
 			const func = global.CLIENT[funcName];
 			if (!func) throw new Error(`Component ${funcName} is missing from client manifest`);
@@ -63,7 +63,6 @@ const script = "window.Router = (function () {"
 	+ CutString(ClientMounter.toString(), "{")[1]
 	+ ")();";
 const hash = QuickHash(script);
-console.log(CutString(ClientMounter.toString(), "{")[1]);
 
 export function _resolve(fragments: string[]): Response | null {
 	if (!fragments[2]) return null;

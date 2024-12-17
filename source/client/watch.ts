@@ -14,7 +14,7 @@ export async function WatchClient() {
 	if (!client) return;
 
 	const rebuild = () => {
-		console.log("Building client");
+		console.info("Building client");
 		GenerateClient(client).catch(console.error);
 	}
 

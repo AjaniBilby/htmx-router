@@ -22,6 +22,8 @@ export class GenericContext {
 		this.params = {};
 		this.url = url;
 		this.render = renderer;
+
+		this.headers.set("x-powered-by", "htmx-router");
 	}
 
 	shape<T extends ParameterShaper>(shape: T) {

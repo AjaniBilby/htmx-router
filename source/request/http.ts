@@ -1,5 +1,5 @@
+import type { IncomingMessage, ServerResponse } from "http";
 import type { ViteDevServer } from "vite";
-import { IncomingMessage, ServerResponse } from "http";
 
 import { GenericContext, RouteTree } from "~/router.js";
 import { Resolve } from "~/request/native.js";

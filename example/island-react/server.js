@@ -1,5 +1,5 @@
 import { createRequestHandler } from 'htmx-router';
-import { renderToString } from 'react-dom/server.js';
+import { renderToString } from 'react-dom/server';
 import express from 'express';
 import morgan from "morgan";
 
@@ -10,7 +10,7 @@ const app = express();
 const viteDevServer =
 	process.env.NODE_ENV === "production"
 		? null
-		: await import("vite/dist/node/index.js").then((vite) =>
+		: await import("vite").then((vite) =>
 				vite.createServer({
 					server: { middlewareMode: true },
 					appType: 'custom'

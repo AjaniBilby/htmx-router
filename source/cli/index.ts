@@ -60,9 +60,9 @@ export function Scripts() {
 	if (headCache) return headCache;
 
 	const res = <>
+		<link href={GetSheetUrl()} rel="stylesheet"></link>
 		{ isProduction ? "" : <script type="module" src="/@vite/client"></script> }
 		<script type="module" src={clientEntry}></script>
-		<link href={GetSheetUrl()} rel="stylesheet"></link>
 		<script src={GetMountUrl()}></script>
 	</>;
 

@@ -27,3 +27,11 @@ export function CutString(str: string, pivot: string, offset = 1): [string, stri
 
 	return [str, ""];
 }
+
+export function Singleton<T>(name: string, cb: () => T): T {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	const g = globalThis as any;
+	g.__singletons ??= {};
+	g.__singletons[name] ??= cb();
+	return g.__singletons[name];
+}

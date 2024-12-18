@@ -1,23 +1,12 @@
-import { watch } from "fs";
-
 import { GenerateClient } from "~/client/index.js";
 import { ReadConfig } from "~/cli/config.js";
 
-export async function WatchClient() {
-	if (process.env.NODE_ENV === "production") {
-		console.warn("Watching client islands is disabled in production");
-		return;
-	}
+export async function __RebuildClient__() {
+	if (process.env.NODE_ENV === "production") return;
 
 	const config = await ReadConfig();
 	const client = config.client;
 	if (!client) return;
 
-	const rebuild = () => {
-		console.info("Building client");
-		GenerateClient(client, false).catch(console.error); // rebuild only if the hash has changed
-	}
-
-	watch(client.source, rebuild);
-	rebuild();
+	GenerateClient(client, false).catch(console.error);
 }

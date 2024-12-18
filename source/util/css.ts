@@ -2,7 +2,7 @@ import { QuickHash } from "~/util/hash.js";
 
 const classNamePattern = /^[a-zA-Z_][a-zA-Z0-9_-]*$/;
 
-const registry = new Array<StyleClass>();
+const registry = new Map<String, StyleClass>();
 let cache: { sheet: string, hash: string } | null = null;
 
 /**
@@ -23,7 +23,7 @@ export class StyleClass {
 		style = style.replaceAll(".this", "."+this.name);
 		this.style = style;
 
-		registry.push(this);
+		registry.set(this.name, this);
 		cache = null;
 	}
 
@@ -57,10 +57,14 @@ export function _resolve(fragments: string[]): Response | null {
 
 
 function BuildSheet() {
-	const key  = registry.map(x => x.hash).join("");
-	const hash = QuickHash(key);
+	let composite = "";
+	let sheet = "";
+	for (const [key, def] of registry) {
+		composite += key;
+		sheet += def.style;
+	}
 
-	const sheet = registry.map(x => x.style).join("");
+	const hash = QuickHash(composite);
 	cache = { hash, sheet };
 
 	return cache;

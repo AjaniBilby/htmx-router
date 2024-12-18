@@ -9,9 +9,11 @@
 		"prepare": "npx htmx-router",
 		"dev": "node ./server.js",
 		"build": "run-s build:*",
+		"build:router": "npx htmx-router",
 		"build:client": "vite build --ssrManifest",
 		"build:server": "vite build --ssr source/entry.server.ts --outDir dist/server",
-		"preview": "cross-env NODE_ENV=production node ./server.js"
+		"preview": "cross-env NODE_ENV=production node ./server.js",
+		"validate": "npx tsc -noEmit"
 	},
 	"author": "",
 	"license": "MIT",

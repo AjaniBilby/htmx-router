@@ -1,9 +1,9 @@
+
 type Controller = ReadableStreamDefaultController;
 
-
 /**
- * Create a new SSE handler
- * Includes auto keep-alive, and graceful shutdown
+ * Helper for Server-Sent-Events, with auto close on SIGTERM and SIGHUP messages
+ * Includes a keep alive empty packet sent every 30sec (because Chrome implodes at 120sec, and can be unreliable at 60sec)
  */
 export class EventSourceConnection {
 	private controller: Controller | null;

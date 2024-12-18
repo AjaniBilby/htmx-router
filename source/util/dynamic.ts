@@ -1,3 +1,7 @@
+/**
+ * This whole file is only for internal use but the generated router for the <Dynamic> component
+ */
+
 import { GenericContext } from "~/router.js";
 import { QuickHash } from "~/util/hash.js";
 

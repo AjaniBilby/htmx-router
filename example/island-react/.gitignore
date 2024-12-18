@@ -1,0 +1,6 @@
+node_modules/*
+bin/*
+dist/*
+
+client.manifest.tsx
+router.tsx

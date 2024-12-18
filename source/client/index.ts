@@ -1,3 +1,7 @@
+/**
+ * Builds the SSR and client side mounter for client components
+ */
+
 import { readFile, writeFile } from "fs/promises";
 import { init, parse } from "es-module-lexer";
 

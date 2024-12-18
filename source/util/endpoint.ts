@@ -4,6 +4,10 @@ import { QuickHash } from "~/util/hash.js";
 
 const registry = new Map<string, Endpoint>();
 
+/**
+ * Create a route-less endpoint
+ * The name is optional and will be inferred from the function if not given (helpful for network waterfalls)
+ */
 export class Endpoint {
 	readonly render: RenderFunction<GenericContext>;
 	readonly name: string;

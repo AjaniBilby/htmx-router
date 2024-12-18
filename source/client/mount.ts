@@ -1,6 +1,7 @@
 import { QuickHash } from "~/util/hash.js";
 import { CutString } from "~/helper.js";
 
+// this function simply exists so it can be stringified and written into the client js bundle
 function ClientMounter() {
 	const theme = {
 		infer: () => {

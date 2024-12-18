@@ -1,3 +1,6 @@
+/**
+ * Not the best hash in the world, but it's something really fast that will work on all JS runtimes
+ */
 export function QuickHash(input: string) {
 	let hash = 0;
 	for (let i = 0; i < input.length; i++) {

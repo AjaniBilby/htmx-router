@@ -15,7 +15,7 @@ export async function WatchClient() {
 
 	const rebuild = () => {
 		console.info("Building client");
-		GenerateClient(client).catch(console.error);
+		GenerateClient(client, false).catch(console.error); // rebuild only if the hash has changed
 	}
 
 	watch(client.source, rebuild);

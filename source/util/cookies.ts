@@ -10,6 +10,9 @@ export interface CookieOptions {
 	secure?: boolean;
 }
 
+/**
+ * Helper provided in the Generic and RouteContext which provides reading and updating cookies
+ */
 export class Cookies {
 	private map: { [key: string]: string };
 	private config: { [key: string]: CookieOptions };

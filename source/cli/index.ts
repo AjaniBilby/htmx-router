@@ -21,7 +21,9 @@ import { RegisterDynamic } from "htmx-router/bin/util/dynamic";
 import { GetMountUrl } from 'htmx-router/bin/client/mount';
 import { GetSheetUrl } from 'htmx-router/bin/util/css';
 import { RouteModule } from "htmx-router";
+import { resolve } from "path";
 
+(globalThis as any).HTMX_ROUTER_ROOT = resolve(${config.router.folder.replaceAll("\\", "/")});
 const modules = import.meta.glob('${routes}/**/*.{ts,tsx}', { eager: true });
 
 export const tree = new RouteTree();

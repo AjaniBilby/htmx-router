@@ -1,5 +1,5 @@
-import { renderToString } from 'react-dom/server';
 import { createRequestHandler } from 'htmx-router';
+import { renderToString } from 'react-dom/server.js';
 import express from 'express';
 import morgan from "morgan";
 
@@ -10,7 +10,7 @@ const app = express();
 const viteDevServer =
 	process.env.NODE_ENV === "production"
 		? null
-		: await import("vite").then((vite) =>
+		: await import("vite/dist/node/index.js").then((vite) =>
 				vite.createServer({
 					server: { middlewareMode: true },
 					appType: 'custom'
@@ -22,23 +22,16 @@ app.use(
 		? viteDevServer.middlewares
 		: express.static("./dist/client")
 );
+
+// logging
 app.use(morgan("tiny"));
-
-
-// Route Rendering
-function Render(res) {
-	const headers = new Headers();
-	headers.set("Content-Type", "text/html; charset=UTF-8");
-	return new Response(String(res), { headers });
-}
 
 const build = viteDevServer
 	? () => viteDevServer.ssrLoadModule('./source/entry.server.ts')
 	: import('./dist/server/entry.server.js');
 
 app.use('*', createRequestHandler.http({
-	build,
-	viteDevServer,
+	build, viteDevServer,
 	render: (res) => {
 		const headers = new Headers();
 		headers.set("Content-Type", "text/html; charset=UTF-8");
@@ -47,7 +40,6 @@ app.use('*', createRequestHandler.http({
 		return new Response(stream, { headers });
 	}
 }));
-
 
 
 // Start http server

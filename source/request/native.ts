@@ -6,19 +6,7 @@ export function createRequestHandler(config: Config) {
 		try {
 			const mod: RouterModule = typeof config.build === "function" ? await config.build() : await config.build;
 
-			let { response, headers } = await Resolve(req, mod.tree, config);
-
-			if (config.viteDevServer) {
-				if (!headers["x-partial"] && response.headers.get("content-type")?.startsWith("text/html")) {
-					const rendered = await config.viteDevServer.transformIndexHtml(req.url || "", await response.text());
-					return new Response(rendered, {
-						status:     response.status,
-						statusText: response.statusText,
-						headers:    response.headers,
-					});
-				}
-			}
-
+			let { response } = await Resolve(req, mod.tree, config);
 			return response;
 		} catch (e) {
 			if (e instanceof Error) {

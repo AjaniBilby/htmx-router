@@ -18,12 +18,13 @@ await writeFile(config.router.output, `/*---------------------------------------
 
 import { GenericContext, RouteTree } from "htmx-router/bin/router";
 import { RegisterDynamic } from "htmx-router/bin/util/dynamic";
+import { GetClientEntryURL } from 'htmx-router/bin/client/entry';
 import { GetMountUrl } from 'htmx-router/bin/client/mount';
 import { GetSheetUrl } from 'htmx-router/bin/util/css';
 import { RouteModule } from "htmx-router";
 import { resolve } from "path";
 
-(globalThis as any).HTMX_ROUTER_ROOT = resolve(${config.router.folder.replaceAll("\\", "/")});
+(globalThis as any).HTMX_ROUTER_ROOT = resolve('${config.router.folder.replaceAll("\\", "/")}');
 const modules = import.meta.glob('${routes}/**/*.{ts,tsx}', { eager: true });
 
 export const tree = new RouteTree();
@@ -52,11 +53,21 @@ export function Dynamic<T extends Record<string, string>>(props: {
 	>{props.children ? props.children : ""}</div>
 }
 
-export function RouteHeaders() {
-	return <>
+let headCache: JSX.Element | null = null;
+const isProduction = process.env.NODE_ENV === "production";
+const clientEntry = await GetClientEntryURL();
+export function Scripts() {
+	if (headCache) return headCache;
+
+	const res = <>
+		{ isProduction ? "" : <script type="module" src="/@vite/client"></script> }
+		<script type="module" src={clientEntry}></script>
 		<link href={GetSheetUrl()} rel="stylesheet"></link>
 		<script src={GetMountUrl()}></script>
-	</>
+	</>;
+
+	if (isProduction) headCache = res;
+	return res;
 }`);
 
 

@@ -27,7 +27,7 @@ app.use(
 app.use(morgan("tiny"));
 
 const build = viteDevServer
-	? () => viteDevServer.ssrLoadModule('./source/entry.server.ts')
+	? () => viteDevServer.ssrLoadModule('./app/entry.server.ts')
 	: import('./dist/server/entry.server.js');
 
 app.use('*', createRequestHandler.http({

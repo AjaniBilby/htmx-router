@@ -35,9 +35,9 @@
 
 		"outDir": "./bin",
 		"paths": {
-			"~/*": ["./source/*"]
+			"~/*": ["./app/*"]
 		},
 	},
-	"include": ["source", "global.d.ts"],
+	"include": ["app", "global.d.ts"],
 	"exclude": ["node_modules"]
 }

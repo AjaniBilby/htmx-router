@@ -41,8 +41,8 @@ function ClientMounter() {
 		if (mountRequests.length < 1) return;
 		if (!global.CLIENT) throw new Error("Client manifest missing");
 
-		console.info("hydrating...");
 		for (const [ funcName, element, json ] of mountRequests) {
+			console.info("hydrating", funcName, "into", element);
 			const func = global.CLIENT[funcName];
 			if (!func) throw new Error(`Component ${funcName} is missing from client manifest`);
 			func(element, json);

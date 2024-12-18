@@ -8,11 +8,11 @@ export default defineConfig({
 	build: {
 		target: "esnext",
 		rollupOptions: {
-			input: 'source/entry.client.ts'
+			input: 'app/entry.client.ts'
 		},
-		// Output configuration
 		outDir: 'dist/client',
-		assetsDir: 'dist/asset'
+		assetsDir: 'dist/asset',
+		manifest: true
 	},
 	plugins: [
 		tsconfigPaths()

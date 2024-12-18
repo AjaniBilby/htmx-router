@@ -1,10 +1,10 @@
 {
 	"router": {
-		"folder": "./source/routes",
-		"output": "./source/router.tsx"
+		"folder": "./app/routes",
+		"output": "./app/router.tsx"
 	},
 	"client": {
 		"adapter": "react",
-		"source": "./source/client.tsx"
+		"source": "./app/client.tsx"
 	}
 }

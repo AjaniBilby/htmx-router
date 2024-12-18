@@ -22,12 +22,6 @@ export function createRequestHandler(config: Config) {
 			res.writeHead(response.status, headers);
 			let rendered = await response.text();
 
-			if (config.viteDevServer) {
-				if (!headers["x-partial"] && response.headers.get("content-type")?.startsWith("text/html")) {
-					rendered = await config.viteDevServer.transformIndexHtml(req.url || "", rendered);
-				}
-			}
-
 			res.end(rendered);
 		} catch (e) {
 			res.statusCode = 500;

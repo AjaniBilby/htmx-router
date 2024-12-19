@@ -67,10 +67,9 @@ export class RouteLeaf {
 	}
 
 	async error(ctx: GenericContext, e: unknown) {
-		if (!this.module.error) return null;
+		if (!this.module.error) throw e;
 
 		const res = await this.module.error(ctx, e);
-		if (res === null) return null;
 		if (res instanceof Response) return res;
 
 		return ctx.render(res);
@@ -90,8 +89,7 @@ export class RouteLeaf {
 			if (this.module.action) return await this.module.action(context);
 			throw new Response("Method not Allowed", { status: 405, statusText: "Method not Allowed", headers: ctx.headers });
 		} catch (e) {
-			if (this.module.error) return await this.module.error(ctx, e);
-			else throw e;
+			return await this.error(ctx, e);
 		}
 
 		return null;
@@ -161,13 +159,29 @@ export class RouteTree {
 	}
 
 	async resolve(fragments: string[], ctx: GenericContext): Promise<Response | null> {
+		if (!this.slug) return await this._resolve(fragments, ctx);
+
+		try {
+			return await this._resolve(fragments, ctx);
+		} catch (e) {
+			return this.unwrap(ctx, e);
+		}
+	}
+
+	private async _resolve(fragments: string[], ctx: GenericContext): Promise<Response | null> {
 		let res = await this.resolveNative(fragments, ctx)
 			|| await this.resolveIndex(fragments, ctx)
 			|| await this.resolveNext(fragments, ctx)
 			|| await this.resolveWild(fragments, ctx)
 			|| await this.resolveSlug(fragments, ctx);
 
-		return this.unwrap(ctx, res);
+		if (res instanceof Response) {
+			if (100 <= res.status && res.status <= 399) return res;
+			if (res.headers.has("X-Caught")) return res;
+			this.unwrap(ctx, res);
+		}
+
+		return res;
 	}
 
 	private async resolveIndex(fragments: string[], ctx: GenericContext): Promise<Response | null> {
@@ -215,26 +229,13 @@ export class RouteTree {
 		return await ResolveNatively(fragments, ctx);
 	}
 
-	private async unwrap(ctx: GenericContext, res: Response | null): Promise<Response | null> {
-		if (!BadResponse(res)) return res;
-		if (!this.slug) return res;
-
-		if (res === null) res = new Response("Not Found", { status: 404, statusText: "Not Found", headers: ctx.headers });
-
-		if (res.headers.has("X-Caught")) return res;
+	private async unwrap(ctx: GenericContext, res: unknown): Promise<Response | null> {
+		if (!this.slug) throw res;
 
 		const caught = await this.slug.error(ctx, res);
-		if (!caught) return res;
-
 		caught.headers.set("X-Caught", "true");
 		return caught;
 	}
-}
-
-function BadResponse(res: Response | null) {
-	if (res === null) return true;
-	if (res.status < 200) return true;
-	if (res.status > 299) return true;
 }
 
 async function ResolveNatively(fragments: string[], ctx: GenericContext): Promise<Response | null> {

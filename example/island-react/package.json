@@ -4,7 +4,7 @@
 		"prepare": "npx htmx-router",
 		"dev": "node ./server.js",
 		"build": "run-s build:*",
-		"x-build:router": "npx htmx-router",
+		"build:router": "npx htmx-router",
 		"build:client": "vite build",
 		"build:server": "vite build --ssr app/entry.server.ts --outDir dist/server",
 		"preview": "cross-env NODE_ENV=production node ./server.js",

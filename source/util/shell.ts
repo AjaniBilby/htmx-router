@@ -1,5 +1,5 @@
-export type ShellOptions<D, T extends OpenGraphType = string> = D & MetaDescriptor<T>;
-export function MergeShellOptions<T>(options: ShellOptions<T>, defaults: Readonly<Partial<ShellOptions<T>>>) {
+export type ShellOptions<D = {}> = D & MetaDescriptor;
+export function ApplyMetaDescriptorDefaults(options: ShellOptions, defaults: Readonly<Partial<ShellOptions>>) {
 	if (defaults.title && !options.title)             options.title       = defaults.title;
 	if (defaults.description && !options.description) options.description = defaults.description;
 
@@ -8,11 +8,13 @@ export function MergeShellOptions<T>(options: ShellOptions<T>, defaults: Readonl
 	if (defaults.jsonLD && !options.jsonLD) options.jsonLD = defaults.jsonLD;
 }
 
-export type MetaDescriptor<T extends OpenGraphType = string> = {
+export type InferShellOptions<F> = F extends (jsx: any, options: infer U) => any ? U : never;
+
+export type MetaDescriptor = {
 	title?: string,
 	description?: string,
 	meta?: Record<string, string>,
-	og?: OpenGraph<T>
+	og?: OpenGraph<string>
 	jsonLD?: LdJsonObject[];
 }
 
@@ -45,7 +47,8 @@ function RenderOpenGraph<T extends string>(og: OpenGraph<T>) {
 	// Manually encoding everything rather than using a loop to ensure they are in the correct order
 	// And to ensure extra values can't leak in creating unsafe og tags
 
-	let out = RenderProperty("og:type", og.type);
+	const type = og.type || "website";
+	let out = RenderProperty("og:type", type);
 
 	if (og.title)       out += RenderProperty("og:title", og.title);
 	if (og.description) out += RenderProperty("og:description", og.description);
@@ -61,7 +64,7 @@ function RenderOpenGraph<T extends string>(og: OpenGraph<T>) {
 		}
 	}
 
-	for (const img of og.image) {
+	if (og.image) for (const img of og.image) {
 		out += RenderProperty("og:image", img.url);
 		if (img.secure_url) out += RenderProperty("og:image:secure_url", img.secure_url);
 		if (img.type)       out += RenderProperty("og:image:type",       img.type);
@@ -230,12 +233,12 @@ export type OpenGraphType = "website" | "article" | "book" | "profile"
 
 export type OpenGraph<T extends OpenGraphType = string> = {
 	// https://ogp.me/
-	type:         T,
+	type?:        T,
 	title?:       string,
 	description?: string,
 	determiner?:  string,
 
-	url:         string,
+	url?:        string,
 	secure_url?: string,
 
 	locale?: string | {
@@ -243,7 +246,7 @@ export type OpenGraph<T extends OpenGraphType = string> = {
 		alternative: string[],
 	},
 
-	image: [OpenGraphImage, ...OpenGraphImage[]],
+	image?: OpenGraphImage[],
 	video?: OpenGraphVideo[],
 	audio?: OpenGraphAudio[],
 } & (

@@ -3,8 +3,9 @@ import { RouteContext, GenericContext } from "~/router.js";
 import { createRequestHandler } from '~/request/index.js';
 
 import {
-	MetaDescriptor, RenderMetaDescriptor, ShellOptions, MergeShellOptions,
-	LdJsonObject, OpenGraph, OpenGraphImage, OpenGraphVideo, OpenGraphAudio
+	MetaDescriptor, RenderMetaDescriptor, ShellOptions, ApplyMetaDescriptorDefaults,
+	LdJsonObject, OpenGraph, OpenGraphImage, OpenGraphVideo, OpenGraphAudio,
+	InferShellOptions
 } from '~/util/shell.js';
 import { redirect, refresh, revalidate, text, json } from '~/util/response.js';
 import { Cookies, CookieOptions } from "~/util/cookies.js";
@@ -35,6 +36,7 @@ export {
 	redirect, refresh, revalidate, text, json,
 
 	// Meta + shell helpers
-	MetaDescriptor, RenderMetaDescriptor, ShellOptions, MergeShellOptions,
-	LdJsonObject, OpenGraph, OpenGraphImage, OpenGraphVideo, OpenGraphAudio
+	MetaDescriptor, RenderMetaDescriptor, ShellOptions, ApplyMetaDescriptorDefaults,
+	LdJsonObject, OpenGraph, OpenGraphImage, OpenGraphVideo, OpenGraphAudio,
+	InferShellOptions
 };

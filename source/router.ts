@@ -178,7 +178,8 @@ export class RouteTree {
 		if (res instanceof Response) {
 			if (100 <= res.status && res.status <= 399) return res;
 			if (res.headers.has("X-Caught")) return res;
-			this.unwrap(ctx, res);
+
+			return this.unwrap(ctx, res);
 		}
 
 		return res;

@@ -4,6 +4,9 @@ import { CutString } from "~/helper.js";
 // this function simply exists so it can be stringified and written into the client js bundle
 function ClientMounter() {
 	const theme = {
+		get: () => {
+			return (localStorage.getItem("theme") || theme.infer()) as "light" | "dark";
+		},
 		infer: () => {
 			const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 			const current = prefersDark ? 'dark' : 'light';
@@ -12,15 +15,14 @@ function ClientMounter() {
 			return current;
 		},
 		apply: () => {
-			const current = localStorage.getItem("theme") || theme.infer();
-			document.documentElement.setAttribute('data-theme', current);
+			document.documentElement.setAttribute('data-theme', theme.get());
 		},
 		toggle: () => {
-			const current = localStorage.getItem("theme") || theme.infer();
-			if (current === "dark") localStorage.setItem("theme", "light");
+			if (theme.get() === "dark") localStorage.setItem("theme", "light");
 			else localStorage.setItem("theme", "dark");
 
 			theme.apply();
+			return localStorage.getItem("theme") as "light" | "dark";
 		}
 	}
 
@@ -52,6 +54,52 @@ function ClientMounter() {
 
 	document.addEventListener("DOMContentLoaded", Mount);
 	if (global.htmx) global.htmx.onLoad(Mount);
+
+
+
+	// Track the number of active requests
+	let activeRequests = 0;
+	const updateLoadingAttribute = () => {
+		if (activeRequests > 0) document.body.setAttribute('data-loading', 'true');
+		else document.body.removeAttribute('data-loading');
+	};
+
+	const originalXHROpen = XMLHttpRequest.prototype.open;
+	const originalXHRSend = XMLHttpRequest.prototype.send;
+	// @ts-ignore
+	XMLHttpRequest.prototype.open = function (...args: Parameters<typeof originalXHROpen>) {
+		this.addEventListener('loadstart', () => {
+			activeRequests++;
+			updateLoadingAttribute();
+		});
+
+		this.addEventListener('loadend', () => {
+			activeRequests--;
+			updateLoadingAttribute();
+		});
+
+		originalXHROpen.apply(this, args);
+	};
+	XMLHttpRequest.prototype.send = function (...args) {
+		originalXHRSend.apply(this, args);
+	};
+
+	// Override fetch
+	const originalFetch = window.fetch;
+	window.fetch = async (...args) => {
+		activeRequests++;
+		updateLoadingAttribute();
+
+		try {
+			const response = await originalFetch(...args);
+			return response;
+		} finally {
+			activeRequests--;
+			updateLoadingAttribute();
+		}
+	};
+
+
 
 	return {
 		mountAboveWith: RequestMount,

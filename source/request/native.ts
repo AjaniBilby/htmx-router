@@ -31,27 +31,21 @@ export async function Resolve(request: Request, tree: RouteTree, config: Config)
 	let response = await tree.resolve(fragments, ctx);
 	if (response === null) response = new Response("No Route Found", { status: 404, statusText: "Not Found", headers: ctx.headers });
 
+	// Override with context headers
+	if (response.headers !== ctx.headers) {
+		for (const [key, value] of ctx.headers) {
+			if (ctx.headers.has(key)) continue;
+			response.headers.set(key, value);
+		}
+	}
 
 	// Merge cookie changes
-	const headers: { [key: string]: string | string[] } = Object.fromEntries(ctx.headers as any);
+	const headers: { [key: string]: string | string[] } = Object.fromEntries(response.headers as any);
 
 	const cookies = ctx.cookie.export();
 	if (cookies.length > 0) {
 		headers['set-cookie'] = cookies;
 		response.headers.set("Set-Cookie", cookies[0]); // Response object doesn't support multi-header..[]
-	}
-
-	// Merge context headers
-	if (response.headers !== ctx.headers) {
-		for (const [key, value] of response.headers) {
-			if (!headers[key]) {
-				headers[key] = value;
-				continue;
-			}
-
-			if (!Array.isArray(headers[key])) headers[key] = [ headers[key] ];
-			headers[key].push(value);
-		}
 	}
 
 	return { response, headers };

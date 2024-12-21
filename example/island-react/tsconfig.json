@@ -4,7 +4,7 @@
 		"useDefineForClassFields": true,
 		"module": "ESNext",
 		"lib": ["DOM", "ES2022"],
-		"types": ["vite/client"],
+		"types": ["vite/client", "typed-htmx"],
 		"esModuleInterop": true,
 		"resolveJsonModule": true,
 

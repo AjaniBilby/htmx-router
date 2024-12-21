@@ -28,7 +28,7 @@ export async function GenerateClient(config: { adapter: string, source: string }
 		writeFile(config.source, source
 			+ pivot
 			+ `// hash: ${hash}\n`
-			+ BuildClientServer(imported)
+			+ BuildClientServer(config.adapter, imported)
 		),
 		writeFile(CutString(config.source, ".", -1)[0] + ".manifest.tsx",
 			BuildClientManifest(config.adapter, imported)
@@ -63,7 +63,14 @@ function ParseImports(source: string) {
 	return out;
 }
 
-function BuildClientServer(imported: Imports) {
+function SafeScript(type: string, script: string) {
+	switch (type) {
+		case "react": return `<script dangerouslySetInnerHTML={{__html: ${script}}}></script>`
+		default: return `<script>${script}</script>`
+	}
+}
+
+function BuildClientServer(type: string, imported: Imports) {
 	const names = new Array<string>();
 	for (const imp of imported) {
 		if (Array.isArray(imp.mapping)) names.push(...imp.mapping.map(x => x.name))
@@ -76,7 +83,7 @@ function BuildClientServer(imported: Imports) {
 		+ "function mount(name: string, data: string, ssr?: JSX.Element) {\n"
 		+ "\treturn (<>\n"
 		+ `\t\t<div className={island}>{ssr}</div>\n`
-		+ "\t\t<script>{`Router.mountAboveWith('${name}', ${data})`}</script>\n"
+		+ `\t\t${SafeScript(type, "`Router.mountAboveWith('${name}', ${data})`")}\n`
 		+ "\t</>);\n"
 		+ "}\n"
 		+ "\n"

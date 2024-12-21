@@ -1,6 +1,6 @@
 {
 	"name": "htmx-router",
-	"version": "1.0.0-alpha.3",
+	"version": "1.0.0-alpha.4",
 	"description": "A simple SSR framework with dynamic+client islands",
 	"keywords": ["htmx", "router", ""],
 	"main": "./bin/index.js",

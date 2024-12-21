@@ -18,8 +18,8 @@ await writeFile(config.router.output, `/*---------------------------------------
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { GenericContext, RouteTree } from "htmx-router/bin/router";
-import { RegisterDynamic } from "htmx-router/bin/util/dynamic";
 import { GetClientEntryURL } from 'htmx-router/bin/client/entry';
+import { DynamicReference } from "htmx-router/bin/util/dynamic";
 import { GetMountUrl } from 'htmx-router/bin/client/mount';
 import { GetSheetUrl } from 'htmx-router/bin/util/css';
 import { RouteModule } from "htmx-router";
@@ -36,18 +36,12 @@ for (const path in modules) {
 }
 
 export function Dynamic<T extends Record<string, string>>(props: {
-	params: T,
-	loader: (params: T, ctx: GenericContext) => Promise<JSX.Element>
+	params?: T,
+	loader: (ctx: GenericContext, params?: T) => Promise<JSX.Element>
 	children?: JSX.Element
 }): JSX.Element {
-	const path = RegisterDynamic(props.loader);
-
-	const query = new URLSearchParams();
-	for (const key in props.params) query.set(key, props.params[key]);
-	const url = path + query.toString();
-
 	return <div
-		hx-get={url}
+		hx-get={DynamicReference(props.loader, props.params)}
 		hx-trigger="load"
 		hx-swap="outerHTML transition:true"
 		style={{ display: "contents" }}

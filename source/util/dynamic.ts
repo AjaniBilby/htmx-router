@@ -8,7 +8,7 @@ import { QuickHash } from "~/util/hash.js";
 const registry = new Map<string, Loader<unknown>>();
 const index = new Map<Function, string>();
 
-export function RegisterDynamic<T>(load: Loader<T>) {
+function Register<T>(load: Loader<T>) {
 	const existing = index.get(load);
 	if (existing) return existing;
 
@@ -16,13 +16,26 @@ export function RegisterDynamic<T>(load: Loader<T>) {
 	const name = `${encodeURIComponent(load.name)}-${hash}`;
 	registry.set(name, load as Loader<unknown>);
 
-	const url = `/_/dynamic/${name}?`;
+	const url = `/_/dynamic/${name}`;
 	index.set(load, url);
 
 	return url;
 }
 
-type Loader<T> = (params: T, ctx: GenericContext) => Promise<JSX.Element>;
+export function DynamicReference<T extends Record<string, string>>(loader: Loader<T>, params?: T) {
+	let url = Register(loader);
+
+	if (params) {
+		const query = new URLSearchParams();
+		if (params) for (const key in params) query.set(key, params[key]);
+
+		url += "?" + query.toString();
+	}
+
+	return url;
+}
+
+type Loader<T> = (ctx: GenericContext, params: T) => Promise<JSX.Element>;
 
 export async function _resolve(fragments: string[], ctx: GenericContext) {
 	if (!fragments[2]) return null;
@@ -34,5 +47,5 @@ export async function _resolve(fragments: string[], ctx: GenericContext) {
 	for (const [key, value] of ctx.url.searchParams) props[key] = value;
 
 	ctx.headers.set("X-Partial", "true");
-	return ctx.render(await endpoint(props, ctx));
+	return ctx.render(await endpoint(ctx, props));
 }

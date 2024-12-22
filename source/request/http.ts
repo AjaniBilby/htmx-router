@@ -42,10 +42,10 @@ function NativeRequest(req: IncomingMessage & { originalUrl?: string }) {
 	const headers = new Headers(req.headers as any);
 	const url = new URL(`http://${headers.get('host')}${req.originalUrl || req.url}`);
 
-	req.once('aborted', () => ctrl.abort())
+	req.once('aborted', () => ctrl.abort());
 
 	const bodied = req.method !== "GET" && req.method !== "HEAD";
-	return new Request(url, {
+	const request = new Request(url, {
 		headers,
 		method: req.method,
 		body: bodied ? req : undefined as any,
@@ -54,4 +54,11 @@ function NativeRequest(req: IncomingMessage & { originalUrl?: string }) {
 		// @ts-ignore
 		duplex: bodied ? 'half' : undefined
 	});
+
+	if (!request.headers.has("X-Real-IP")) {
+		const info = req.socket.address();
+		if ("address" in info) request.headers.set("X-Real-IP", info.address);
+	}
+
+	return request;
 }

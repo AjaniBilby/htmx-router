@@ -30,9 +30,12 @@ const modules = import.meta.glob('${routes}/**/*.{ts,tsx}', { eager: true });
 
 export const tree = new RouteTree();
 for (const path in modules) {
+	const mod = modules[path] as RouteModule<any>;
 	const tail = path.lastIndexOf(".");
 	const url = path.slice(${routes.length+1}, tail);
-	tree.ingest(url, modules[path] as RouteModule<any>);
+	tree.ingest(url, mod);
+
+	if (mod.route) mod.route(url as any);
 }
 
 export function Dynamic<T extends Record<string, string>>(props: {

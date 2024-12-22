@@ -9,4 +9,5 @@ export type RouteModule<T extends ParameterShaper> = {
 	loader?:     RenderFunction<RouteContext<T>>;
 	action?:     RenderFunction<RouteContext<T>>;
 	error?:      CatchFunction <RouteContext<T>>;
+	route?:      (params: Record<string, string>) => string;
 }

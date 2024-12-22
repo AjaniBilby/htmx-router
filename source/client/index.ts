@@ -6,7 +6,7 @@ import { readFile, writeFile } from "fs/promises";
 import { init, parse } from "es-module-lexer";
 
 import { QuickHash } from "~/util/hash.js";
-import { CutString } from "~/helper.js";
+import { CutString } from "~/util/index.js";
 
 const pivot = `\n// DO NOT EDIT BELOW THIS LINE\n`;
 

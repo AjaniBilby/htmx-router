@@ -20,9 +20,21 @@ export function createRequestHandler(config: Config) {
 			const request = NativeRequest(req);
 			let { response, headers } = await Resolve(request, mod.tree, config);
 			res.writeHead(response.status, headers);
-			let rendered = await response.text();
 
-			res.end(rendered);
+			if (!response.body || typeof response.body.getReader !== 'function') {
+				const rendered = await response.text();
+				res.end(rendered);
+				return;
+			}
+
+			const reader = response.body.getReader();
+			while (true) {
+				const { done, value } = await reader.read();
+				if (done) break;
+				res.write(value); // `value` is a Uint8Array.
+			}
+
+			res.end();
 		} catch (e) {
 			res.statusCode = 500;
 			if (e instanceof Error) {

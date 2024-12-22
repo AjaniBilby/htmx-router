@@ -1,6 +1,8 @@
 
 type Controller = ReadableStreamDefaultController;
 
+const encoder = new TextEncoder();
+
 /**
  * Helper for Server-Sent-Events, with auto close on SIGTERM and SIGHUP messages
  * Includes a keep alive empty packet sent every 30sec (because Chrome implodes at 120sec, and can be unreliable at 60sec)
@@ -40,18 +42,18 @@ export class EventSourceConnection {
 		if (!this.controller) return;
 
 		try {
-			this.controller.enqueue("\n\n");
+			this.controller.enqueue(encoder.encode("\n\n"));
 		} catch (e) {
 			console.error(e);
 			this.close(); // unbind on failure
 		}
 	}
 
-	send(type: string, data: string, timeStamp: number) {
+	send(type: string, data: string) {
 		if (!this.controller) return false;
 
 		try {
-			this.controller.enqueue(`event: ${type}\ndata: [${data},${timeStamp}]\n\n`);
+			this.controller.enqueue(encoder.encode(`event: ${type}\ndata: ${data}\n\n`));
 			return true;
 		} catch (e) {
 			console.error(e);

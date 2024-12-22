@@ -7,7 +7,10 @@ import {
 	LdJsonObject, OpenGraph, OpenGraphImage, OpenGraphVideo, OpenGraphAudio,
 	InferShellOptions
 } from '~/util/shell.js';
-import { redirect, refresh, revalidate, text, json } from '~/util/response.js';
+import {
+	redirect, refresh, revalidate, text, json,
+	TypedResponse, TypedJson,
+} from '~/util/response.js';
 import { Cookies, CookieOptions } from "~/util/cookies.js";
 import { EventSourceConnection } from "~/util/event-source.js";
 import { DynamicReference } from '~/util/dynamic.js';
@@ -35,6 +38,7 @@ export {
 
 	// Response helpers
 	redirect, refresh, revalidate, text, json,
+	TypedResponse, TypedJson,
 
 	// Meta + shell helpers
 	MetaDescriptor, RenderMetaDescriptor, ShellOptions, ApplyMetaDescriptorDefaults,

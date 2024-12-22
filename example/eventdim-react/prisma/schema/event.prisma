@@ -1,0 +1,51 @@
+model Category {
+	id Int @id @default(autoincrement())
+
+	parent   Category? @relation("SubCategory", fields: [parentID], references: [id], onUpdate: Cascade, onDelete: Restrict)
+	parentID Int?
+
+	name String @db.VarChar(100) // runtime checks on creation
+	@@unique([parentID, name])   // don't allow duplicates at the same nesting level
+
+	children Category[] @relation("SubCategory")
+	events   Event[]
+
+	createdAt DateTime @default(now())
+	updatedAt DateTime @default(now()) @updatedAt
+}
+
+
+model Event {
+	id Int @id @default(autoincrement())
+
+	category   Category? @relation(fields: [categoryID], references: [id], onUpdate: Cascade, onDelete: Restrict)
+	categoryID Int?
+
+	name        String @db.VarChar(100) // runtime checks on creation
+	description String
+
+	author User? @relation("EventAuthor", fields: [userID], references: [id], onUpdate: Cascade, onDelete: Cascade) // delete all user content on user deletion
+	userID Int
+
+	comments  EventComment[]
+	attending User[]
+
+	createdAt DateTime @default(now())
+	updatedAt DateTime @default(now()) @updatedAt
+}
+
+
+model EventComment {
+	id Int @id @default(autoincrement())
+
+	event Event? @relation(fields: [eventID], references: [id], onUpdate: Cascade, onDelete: Cascade)
+	eventID Int
+
+	body String
+
+	replyTo EventComment? @relation("EventCommentReply", fields: [replyID], references: [id], onUpdate: Cascade, onDelete: Cascade)
+	replyID Int
+	replies EventComment[] @relation("EventCommentReply")
+
+	createdAt DateTime @default(now())
+}

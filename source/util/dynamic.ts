@@ -22,6 +22,7 @@ function Register<T>(load: Loader<T>) {
 	return url;
 }
 
+type Loader<T> = (ctx: GenericContext, params: T) => Promise<JSX.Element | Response>;
 export function DynamicReference<T extends Record<string, string>>(loader: Loader<T>, params?: T) {
 	let url = Register(loader);
 
@@ -35,7 +36,6 @@ export function DynamicReference<T extends Record<string, string>>(loader: Loade
 	return url;
 }
 
-type Loader<T> = (ctx: GenericContext, params: T) => Promise<JSX.Element>;
 
 export async function _resolve(fragments: string[], ctx: GenericContext) {
 	if (!fragments[2]) return null;
@@ -47,5 +47,8 @@ export async function _resolve(fragments: string[], ctx: GenericContext) {
 	for (const [key, value] of ctx.url.searchParams) props[key] = value;
 
 	ctx.headers.set("X-Partial", "true");
-	return ctx.render(await endpoint(ctx, props));
+	const res = await endpoint(ctx, props);
+
+	if (res instanceof Response) return res;
+	return ctx.render(res);
 }

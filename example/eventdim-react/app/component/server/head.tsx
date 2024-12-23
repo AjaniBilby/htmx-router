@@ -4,7 +4,7 @@ import { ReactNode } from "react";
 
 
 export function Head<T>(props: { options: ShellOptions<T>, children: ReactNode }) {
-	let body = RenderMetaDescriptor(props.options)
+	const body = RenderMetaDescriptor(props.options)
 		+ renderToString(props.children);
 
 	return <head dangerouslySetInnerHTML={{ __html: body }}></head>;

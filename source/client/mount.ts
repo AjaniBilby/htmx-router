@@ -53,7 +53,7 @@ function ClientMounter() {
 	}
 
 	document.addEventListener("DOMContentLoaded", Mount);
-	if (global.htmx) global.htmx.onLoad(Mount);
+	document.addEventListener("htmx:load", Mount);
 
 	return {
 		mountAboveWith: RequestMount,

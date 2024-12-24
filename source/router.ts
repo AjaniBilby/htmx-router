@@ -32,7 +32,7 @@ export class GenericContext {
 	}
 }
 
-export class RouteContext<T extends ParameterShaper> {
+export class RouteContext<T extends ParameterShaper = {}> {
 	request: Request;
 	headers: Headers; // response headers
 	cookie: Cookies;

@@ -10,13 +10,12 @@ import { prisma } from "~/db.server";
 
 const menu = new StyleClass("menu", `
 .this .icon {
-
-	animation: spin 0.6s linear infinite paused;
-	animation-delay: .2s;
+	animation: none;
 }
 
 [data-loading] .this .icon {
-	animation-play-state: running;
+	animation: spin 0.6s linear infinite;
+	animation-delay: .4sec;
 }
 `).name;
 

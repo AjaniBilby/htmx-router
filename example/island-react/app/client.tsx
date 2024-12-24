@@ -10,7 +10,7 @@ type FirstArg<T> = T extends (arg: infer U, ...args: any[]) => any ? U : never;
 function mount(name: string, data: string, ssr?: JSX.Element) {
 	return (<>
 		<div className={island}>{ssr}</div>
-		<script>{`Router.mountAboveWith('${name}', ${data})`}</script>
+		<script dangerouslySetInnerHTML={{__html: `Router.mountAboveWith('${name}', ${data})`}}></script>
 	</>);
 }
 

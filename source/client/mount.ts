@@ -36,7 +36,10 @@ function ClientMounter() {
 
 	const mountRequests = new Array<[string, Element, string]>();
 	function RequestMount(funcName: string, json: string) {
-		mountRequests.push([funcName, document.currentScript!.previousElementSibling!, json]);
+		const elm = document.currentScript!.previousElementSibling!;
+		if (elm.hasAttribute("mounted")) return;
+
+		mountRequests.push([funcName, elm, json]);
 	}
 
 	function Mount() {
@@ -48,6 +51,7 @@ function ClientMounter() {
 			const func = global.CLIENT[funcName];
 			if (!func) throw new Error(`Component ${funcName} is missing from client manifest`);
 			func(element, json);
+			element.setAttribute("mounted", "yes");
 		}
 		mountRequests.length = 0;
 	}

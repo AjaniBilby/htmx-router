@@ -8,6 +8,6 @@ export async function GetClientEntryURL() {
 		const def = config[key];
 		if (!def.isEntry) continue;
 
-		return def.file;
+		return "/" + def.file;
 	}
 }

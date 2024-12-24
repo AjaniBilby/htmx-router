@@ -123,12 +123,26 @@ function Unmount(node: HTMLElement, root: Root) {
 
 const cleanup = `
 
+const limbo = new Set<Node>();
+let queued = false;
 const observer = new MutationObserver((mutations) => {
 	for (const mut of mutations) {
-		for (const node of mut.removedNodes) CleanNode(node);
+		for (const node of mut.removedNodes) limbo.add(node);
+		for (const node of mut.addedNodes)   limbo.delete(node);
+	}
+
+	if (!queued) {
+		queueMicrotask(Cleanup);
+		queued = true;
 	}
 });
 observer.observe(document.body, { childList: true, subtree: true });
+
+function Cleanup() {
+	queued = false;
+	for (const elm of limbo) CleanNode(elm);
+	limbo.clear();
+}
 
 function CleanNode(node: Node) {
 	if (node instanceof HTMLElement) {

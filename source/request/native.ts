@@ -34,7 +34,7 @@ export async function Resolve(request: Request, tree: RouteTree, config: Config)
 	// Override with context headers
 	if (response.headers !== ctx.headers) {
 		for (const [key, value] of ctx.headers) {
-			if (ctx.headers.has(key)) continue;
+			if (response.headers.has(key)) continue;
 			response.headers.set(key, value);
 		}
 	}

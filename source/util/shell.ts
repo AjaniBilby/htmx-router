@@ -29,7 +29,7 @@ export function RenderMetaDescriptor<T>(options: ShellOptions<T>) {
 	}
 
 	if (options.jsonLD) for (const json of options.jsonLD) {
-		out += `<script>${EscapeHTML(JSON.stringify(json))}</script>\n`;
+		out += `<script type="application/ld+json">${JSON.stringify(json)}</script>\n`;
 	}
 
 	// Auto apply og:title + og:description if not present

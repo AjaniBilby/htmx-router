@@ -1,5 +1,4 @@
-const generic = `"use server";
-import { DynamicReference } from "htmx-router/dynamic";
+const generic = `import { DynamicReference } from "htmx-router/dynamic";
 import { GenericContext } from "htmx-router/router";
 
 export function Dynamic<T extends Record<string, string>>(props: {

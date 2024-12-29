@@ -1,61 +1,51 @@
 import { ServerOnlyWarning } from "./internal/util.js";
 ServerOnlyWarning("router");
 
+import type { GenericContext } from "./internal/router.js";
+import { Parameterize, Parameterized, ParameterShaper } from './util/parameters.js';
+import { RouteModule } from "./index.js";
+import { Cookies } from './cookies.js';
+
+// builtin routes
 import * as endpoint from './endpoint.js';
 import * as dynamic from './dynamic.js';
 import * as mount from './internal/mount.js';
 import * as css from './css.js';
 
-import { Parameterize, Parameterized, ParameterShaper } from './util/parameters.js';
-import { RouteModule } from "./index.js";
-import { Cookies } from './cookies.js';
+export function GenerateRouteTree(props: {
+	modules: Record<string, unknown>,
+	scope: string,
+}) {
+	if (!props.scope.endsWith("/")) props.scope += "/";
 
-export function GenerateRouteTree(modules: Record<string, unknown>) {
 	const tree = new RouteTree();
-	for (const path in modules) {
-		const mod = modules[path] as RouteModule<any>;
+	for (const path in props.modules) {
+		const mod  = props. modules[path] as RouteModule<any>;
 		const tail = path.lastIndexOf(".");
-		const url = path.slice(9, tail);
+		const url  = path.slice(props.scope.length, tail);
 		tree.ingest(url, mod);
 
 		if (mod.route) mod.route(url as any);
 	}
 
+	// ingest router builtins
+	tree.ingest(endpoint.path, endpoint);
+	tree.ingest(dynamic.path, dynamic);
+	tree.ingest(mount.path, mount);
+	tree.ingest(css.path, css);
+
 	return tree;
 }
 
 
-export class GenericContext {
-	request: Request;
-	headers: Headers; // response headers
-	cookie: Cookies;
-	params: { [key: string]: string };
-	url: URL;
 
-	render: (res: JSX.Element) => Response;
-
-	constructor(request: GenericContext["request"], url: GenericContext["url"], renderer: GenericContext["render"]) {
-		this.cookie = new Cookies(request.headers);
-		this.headers = new Headers();
-		this.request = request;
-		this.params = {};
-		this.url = url;
-		this.render = renderer;
-
-		this.headers.set("x-powered-by", "htmx-router");
-	}
-
-	shape<T extends ParameterShaper>(shape: T) {
-		return new RouteContext(this, shape);
-	}
-}
 
 export class RouteContext<T extends ParameterShaper = {}> {
-	request: Request;
-	headers: Headers; // response headers
-	cookie: Cookies;
-	params: Parameterized<T>;
-	url: URL;
+	readonly request: Request;
+	readonly headers: Headers; // response headers
+	readonly cookie:  Cookies;
+	readonly params:  Parameterized<T>;
+	readonly url:     URL;
 
 	render: (res: JSX.Element) => Response;
 
@@ -74,25 +64,23 @@ export class RouteContext<T extends ParameterShaper = {}> {
 
 
 export class RouteTree {
-	root: boolean;
-	nested: Map<string, RouteTree>;
+	private nested: Map<string, RouteTree>;
 
 	// Leaf nodes
-	index : RouteLeaf | null; // about._index
+	private index: RouteLeaf | null; // _index.tsx
 
-	// Wild card route
-	slug: RouteLeaf | null; // $
-	wild: RouteTree | null; // e.g. $userID
-	wildCard: string;
+	// Wild card routes
+	private slug: RouteLeaf | null; // $
+	private wild: RouteTree | null; // e.g. $userID
+	private wildCard: string;
 
-	constructor(root = true) {
-		this.root = root;
+	constructor() {
 		this.nested = new Map();
-		this.wildCard = "";
-		this.slug = null;
-		this.wild = null;
+		this.index  = null;
 
-		this.index = null;
+		this.wildCard = "";
+		this.wild = null;
+		this.slug = null;
 	}
 
 	ingest(path: string | string[], module: RouteModule<any>) {
@@ -114,7 +102,7 @@ export class RouteTree {
 			// Check wildcard isn't being changed
 			if (!this.wild) {
 				this.wildCard = wildCard;
-				this.wild = new RouteTree(false);
+				this.wild = new RouteTree();
 			} else if (wildCard !== this.wildCard) {
 				throw new Error(`Redefinition of wild card ${this.wildCard} to ${wildCard}`);
 			}
@@ -126,7 +114,7 @@ export class RouteTree {
 
 		let next = this.nested.get(path[0]);
 		if (!next) {
-			next = new RouteTree(false);
+			next = new RouteTree();
 			this.nested.set(path[0], next);
 		}
 
@@ -145,8 +133,7 @@ export class RouteTree {
 	}
 
 	private async _resolve(fragments: string[], ctx: GenericContext): Promise<Response | null> {
-		let res = await this.resolveNative(fragments, ctx)
-			|| await this.resolveIndex(fragments, ctx)
+		let res = await this.resolveIndex(fragments, ctx)
 			|| await this.resolveNext(fragments, ctx)
 			|| await this.resolveWild(fragments, ctx)
 			|| await this.resolveSlug(fragments, ctx);
@@ -198,14 +185,6 @@ export class RouteTree {
 		return res;
 	}
 
-	private async resolveNative(fragments: string[], ctx: GenericContext): Promise<Response | null> {
-		if (!this.root) return null;
-		if (fragments.length < 2) return null;
-		if (fragments[0] != "_")  return null;
-
-		return await ResolveNatively(fragments, ctx);
-	}
-
 	private async unwrap(ctx: GenericContext, res: unknown): Promise<Response | null> {
 		if (!this.slug) throw res;
 
@@ -216,7 +195,7 @@ export class RouteTree {
 }
 
 class RouteLeaf {
-	module: RouteModule<any>;
+	private module: RouteModule<any>;
 
 	constructor(module: RouteModule<any>) {
 		this.module = module;
@@ -258,15 +237,4 @@ class RouteLeaf {
 
 		return null;
 	}
-}
-
-async function ResolveNatively(fragments: string[], ctx: GenericContext): Promise<Response | null> {
-	switch (fragments[1]) {
-		case "dynamic":  return dynamic._resolve(fragments, ctx);
-		case "endpoint": return endpoint._resolve(fragments, ctx);
-		case "mount":    return mount._resolve(fragments);
-		case "style":    return css._resolve(fragments);
-	}
-
-	return null;
 }

@@ -1,5 +1,4 @@
-const generic = `"use server";
-import { RenderMetaDescriptor, ShellOptions } from "htmx-router/shell";
+const generic = `import { RenderMetaDescriptor, ShellOptions } from "htmx-router/shell";
 
 export function Head<T>(props: { options: ShellOptions<T>, children: JSX.Element }) {
 	return <head>
@@ -8,8 +7,7 @@ export function Head<T>(props: { options: ShellOptions<T>, children: JSX.Element
 	</head>;
 }`;
 
-const react = `"use server";
-import { RenderMetaDescriptor, ShellOptions } from "htmx-router/shell";
+const react = `import { RenderMetaDescriptor, ShellOptions } from "htmx-router/shell";
 import { renderToString } from 'react-dom/server';
 import { ReactNode } from "react";
 

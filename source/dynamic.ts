@@ -1,7 +1,7 @@
 import { ServerOnlyWarning } from "./internal/util.js";
 ServerOnlyWarning("dynamic-ref");
 
-import type { GenericContext } from "./router.js";
+import type { RouteContext } from "./router.js";
 import { QuickHash } from "./internal/util.js";
 
 const registry = new Map<string, Loader<unknown>>();
@@ -21,7 +21,7 @@ function Register<T>(load: Loader<T>) {
 	return url;
 }
 
-type Loader<T> = (ctx: GenericContext, params: T) => Promise<JSX.Element | Response>;
+type Loader<T> = (ctx: RouteContext<{}>, params: T) => Promise<JSX.Element | Response>;
 export function DynamicReference<T extends Record<string, string>>(loader: Loader<T>, params?: T) {
 	let url = Register(loader);
 
@@ -36,10 +36,18 @@ export function DynamicReference<T extends Record<string, string>>(loader: Loade
 }
 
 
-export async function _resolve(fragments: string[], ctx: GenericContext) {
-	if (!fragments[2]) return null;
 
-	const endpoint = registry.get(fragments[2]);
+/**
+ * RouteTree mounting point
+ */
+export const path = "_/dynamic/$";
+
+export const parameters = {
+	"$": String
+}
+
+export async function loader(ctx: RouteContext<typeof parameters>) {
+	const endpoint = registry.get(ctx.params["$"]);
 	if (!endpoint) return null;
 
 	const props: Record<string, string> = {};

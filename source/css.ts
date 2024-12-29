@@ -1,3 +1,4 @@
+import { RouteContext } from "./index.js";
 import { QuickHash } from "./internal/util.js";
 
 const classNamePattern = /^[a-zA-Z_][a-zA-Z0-9_-]*$/;
@@ -32,30 +33,6 @@ export class StyleClass {
 	}
 }
 
-
-function GetSheet() {
-	return cache || BuildSheet();
-}
-
-export function GetSheetUrl() {
-	const sheet = GetSheet();
-	return `/_/style/${sheet.hash}.css`;
-}
-
-export function _resolve(fragments: string[]): Response | null {
-	if (!fragments[2]) return null;
-
-	const build = GetSheet();
-	if (!fragments[2].startsWith(build.hash)) return null;
-
-	const headers = new Headers();
-	headers.set("Content-Type", "text/css");
-	headers.set("Cache-Control", "public, max-age=604800");
-
-	return new Response(build.sheet, { headers });
-}
-
-
 function BuildSheet() {
 	let composite = "";
 	let sheet = "";
@@ -68,4 +45,35 @@ function BuildSheet() {
 	cache = { hash, sheet };
 
 	return cache;
+}
+
+function GetSheet() {
+	return cache || BuildSheet();
+}
+
+export function GetSheetUrl() {
+	const sheet = GetSheet();
+	return `/_/style/${sheet.hash}.css`;
+}
+
+
+
+/**
+ * RouteTree mounting point
+ */
+export const path = "_/style/$hash";
+
+export const parameters = {
+	hash: String
+}
+
+export async function loader(ctx: RouteContext<typeof parameters>) {
+	const build = GetSheet();
+	if (!ctx.params.hash.startsWith(build.hash)) return null;
+
+	const headers = new Headers();
+	headers.set("Content-Type", "text/css");
+	headers.set("Cache-Control", "public, max-age=604800");
+
+	return new Response(build.sheet, { headers });
 }

@@ -1,8 +1,9 @@
 import { ServerOnlyWarning } from "../util.js";
 ServerOnlyWarning("native-request");
 
-import { GenericContext, type RouteTree } from '../../router.js';
 import type { Config, RouterModule } from './index.js';
+import type { RouteTree } from '../../router.js';
+import { GenericContext } from "../router.js";
 
 export function createRequestHandler(config: Config) {
 	return async (req: Request) => {

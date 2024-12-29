@@ -1,5 +1,4 @@
-const generic = `"use server";
-import { GetClientEntryURL } from 'htmx-router/internal/client';
+const generic = `import { GetClientEntryURL } from 'htmx-router/internal/client';
 import { GetMountUrl } from 'htmx-router/internal/mount';
 import { GetSheetUrl } from 'htmx-router/css';
 

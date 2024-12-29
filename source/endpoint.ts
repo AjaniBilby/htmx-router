@@ -1,8 +1,7 @@
 import { ServerOnlyWarning } from "./internal/util.js";
 ServerOnlyWarning("endpoint");
 
-import type { GenericContext } from "./router.js";
-import type { RenderFunction } from "./index.js";
+import type { RenderFunction, RouteContext } from "./index.js";
 import { QuickHash } from "./internal/util.js";
 
 const registry = new Map<string, Endpoint>();
@@ -12,11 +11,11 @@ const registry = new Map<string, Endpoint>();
  * The name is optional and will be inferred from the function if not given (helpful for network waterfalls)
  */
 export class Endpoint {
-	readonly render: RenderFunction<GenericContext>;
+	readonly render: RenderFunction<RouteContext>;
 	readonly name: string;
 	readonly url:  string;
 
-	constructor(render: RenderFunction<GenericContext>, name?: string) {
+	constructor(render: RenderFunction<RouteContext<{}>>, name?: string) {
 		this.render = render;
 
 		name ||= render.constructor.name;
@@ -29,10 +28,19 @@ export class Endpoint {
 	}
 }
 
-export async function _resolve(fragments: string[], ctx: GenericContext) {
-	if (!fragments[2]) return null;
 
-	const endpoint = registry.get(fragments[2]);
+
+/**
+ * RouteTree mounting point
+ */
+export const path = "_/endpoint/$";
+
+export const parameters = {
+	"$": String
+}
+
+export async function loader(ctx: RouteContext<typeof parameters>) {
+	const endpoint = registry.get(ctx.params["$"]);
 	if (!endpoint) return null;
 
 	const res = await endpoint.render(ctx);

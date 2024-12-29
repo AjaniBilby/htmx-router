@@ -2,6 +2,7 @@ import { ServerOnlyWarning } from "./util.js";
 ServerOnlyWarning("client-mounter");
 
 import { CutString, QuickHash } from "./util.js";
+import { RouteContext } from "../index.js";
 
 // this function simply exists so it can be stringified and written into the client js bundle
 function ClientMounter() {
@@ -73,19 +74,30 @@ const script = "window.Router = (function () {"
 	+ ")();";
 const hash = QuickHash(script);
 
-export function _resolve(fragments: string[]): Response | null {
-	if (!fragments[2]) return null;
+export function GetMountUrl() {
+	return `/_/mount/${hash}.js`;
+}
+
+
+
+/**
+ * RouteTree mounting point
+ */
+export const path = "_/mount/$hash";
+
+export const parameters = {
+	hash: String
+}
+
+export async function loader(ctx: RouteContext<typeof parameters>) {
+	if (!ctx.params.hash) return null;
 
 	// const build = GetSheet();
-	if (!fragments[2].startsWith(hash)) return null;
+	if (!ctx.params.hash.startsWith(hash)) return null;
 
 	const headers = new Headers();
 	headers.set("Content-Type", "text/javascript");
 	headers.set("Cache-Control", "public, max-age=604800");
 
 	return new Response(script, { headers });
-}
-
-export function GetMountUrl() {
-	return `/_/mount/${hash}.js`;
 }

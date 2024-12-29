@@ -1,5 +1,5 @@
-import type { GenericContext, RouteContext } from "./router.js";
 import type { ParameterShaper } from "./util/parameters.js";
+import type { RouteContext } from "./router.js";
 
 import { createRequestHandler } from "./internal/request/index.js";
 
@@ -22,4 +22,4 @@ type ClientIsland<T> = T extends (props: infer P) => JSX.Element
 	: T;
 
 
-export { createRequestHandler, GenericContext, RouteContext };
+export { createRequestHandler, RouteContext };

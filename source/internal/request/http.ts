@@ -4,7 +4,8 @@ ServerOnlyWarning("http-request");
 import type { IncomingMessage, ServerResponse } from "http";
 import type { ViteDevServer } from "vite";
 
-import type { GenericContext, RouteTree } from "../../router.js";
+import type { GenericContext } from "../router.js";
+import type { RouteTree } from "../../router.js";
 import { Resolve } from "./native.js";
 
 type Config = {

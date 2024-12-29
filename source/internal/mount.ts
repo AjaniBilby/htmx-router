@@ -1,5 +1,7 @@
-import { QuickHash } from "~/util/hash.js";
-import { CutString } from "~/util/index.js";
+import { ServerOnlyWarning } from "./util.js";
+ServerOnlyWarning("client-mounter");
+
+import { CutString, QuickHash } from "./util.js";
 
 // this function simply exists so it can be stringified and written into the client js bundle
 function ClientMounter() {

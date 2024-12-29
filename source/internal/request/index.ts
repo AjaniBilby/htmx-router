@@ -1,8 +1,11 @@
+import { ServerOnlyWarning } from "../util.js";
+ServerOnlyWarning("request");
+
 import type { ViteDevServer } from "vite";
 
-import * as native from "~/request/native.js";
-import * as http from "~/request/http.js";
-import { GenericContext, RouteTree } from '~/router.js';
+import type { GenericContext, RouteTree } from '../../router.js';
+import * as native from "./native.js";
+import * as http from "./http.js";
 
 export type Config = {
 	build: Promise<any> | (() => Promise<Record<string, any>>),
@@ -10,9 +13,10 @@ export type Config = {
 	render: GenericContext["render"]
 };
 
-export type RouterModule = { tree: RouteTree }
+export type RouterModule = { tree: RouteTree };
+
 
 export const createRequestHandler = {
 	http: http.createRequestHandler,
 	native: native.createRequestHandler
-}
+};

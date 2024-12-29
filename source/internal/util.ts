@@ -1,3 +1,11 @@
+export function QuickHash(input: string) {
+	let hash = 0;
+	for (let i = 0; i < input.length; i++) {
+		hash = (hash * 31 + input.charCodeAt(i)) >>> 0;
+	}
+	return hash.toString(36).slice(0, 5);
+}
+
 export function CutString(str: string, pivot: string, offset = 1): [string, string] {
 	if (offset > 0) {
 		let cursor = 0;
@@ -34,4 +42,14 @@ export function Singleton<T>(name: string, cb: () => T): T {
 	g.__singletons ??= {};
 	g.__singletons[name] ??= cb();
 	return g.__singletons[name];
+}
+
+
+export function ServerOnlyWarning(context: string) {
+	if (typeof process !== "undefined") return;
+	if (typeof document == "undefined") return;
+
+	console.warn(`Warn: Server-side only htmx-router feature ${context} has leaked to client code`);
+
+	console.log(typeof document, typeof process);
 }

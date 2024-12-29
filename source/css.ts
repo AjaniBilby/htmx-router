@@ -1,4 +1,4 @@
-import { QuickHash } from "~/util/hash.js";
+import { QuickHash } from "./internal/util.js";
 
 const classNamePattern = /^[a-zA-Z_][a-zA-Z0-9_-]*$/;
 

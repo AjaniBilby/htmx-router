@@ -1,6 +1,9 @@
-import { RenderFunction } from "~/types.js";
-import { GenericContext } from "~/router.js";
-import { QuickHash } from "~/util/hash.js";
+import { ServerOnlyWarning } from "./internal/util.js";
+ServerOnlyWarning("endpoint");
+
+import type { GenericContext } from "./router.js";
+import type { RenderFunction } from "./index.js";
+import { QuickHash } from "./internal/util.js";
 
 const registry = new Map<string, Endpoint>();
 

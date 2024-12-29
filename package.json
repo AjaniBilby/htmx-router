@@ -2,14 +2,18 @@
 	"name": "htmx-router",
 	"version": "1.0.0-alpha.5",
 	"description": "A simple SSR framework with dynamic+client islands",
-	"keywords": ["htmx", "router", ""],
-	"main": "./bin/index.js",
+	"keywords": [
+		"htmx",
+		"router",
+		""
+	],
+	"main": "./index.js",
 	"type": "module",
 	"scripts": {
 		"build": "tsc && tsc-alias"
 	},
 	"bin": {
-		"htmx-router": "bin/cli/index.js"
+		"htmx-router": "cli/index.js"
 	},
 	"repository": {
 		"type": "git",
@@ -23,7 +27,7 @@
 	"homepage": "https://github.com/AjaniBilby/htmx-router#readme",
 	"dependencies": {
 		"es-module-lexer": "^1.5.4",
-		"vite": "^6.0.1"
+		"vite": "^6.0.6"
 	},
 	"devDependencies": {
 		"@types/node": "^20.4.5",

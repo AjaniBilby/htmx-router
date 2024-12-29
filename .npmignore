@@ -2,5 +2,5 @@
 
 !package.json
 !readme.md
-!bin/*
-!bin/**/*
+!*.d.ts
+!*.js

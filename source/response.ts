@@ -12,7 +12,6 @@ export function text(text: string, init?: ResponseInit) {
 
 export type TypedResponse<T> = Omit<Response, "json"> & { json(): Promise<T> };
 export type TypedJson<U extends TypedResponse<any>> = U extends TypedResponse<infer T> ? T : never;
-
 export function json<T>(data: T, init?: ResponseInit): TypedResponse<T> {
 	init ||= {};
 	init.statusText ||= "ok";

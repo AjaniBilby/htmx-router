@@ -1,7 +1,3 @@
-/**
- * This is used by GenericContext to convert itself to a RouteContext<T>
- */
-
 export type Parameterized<T extends ParameterShaper> = {
 	[K in keyof T]: ReturnType<T[K]>;
 };

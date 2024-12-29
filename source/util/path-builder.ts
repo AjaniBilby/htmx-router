@@ -1,6 +1,9 @@
+import { ServerOnlyWarning } from "../internal/util.js";
+ServerOnlyWarning("path-builder");
+
 import { relative } from "path";
 
-import { ParameterShaper } from "~/util/parameters.js";
+import { ParameterShaper } from "./parameters.js";
 
 
 /*

@@ -1,3 +1,6 @@
+import { ServerOnlyWarning } from "./internal/util.js";
+ServerOnlyWarning("shell");
+
 export type ShellOptions<D = {}> = D & MetaDescriptor;
 export function ApplyMetaDescriptorDefaults(options: ShellOptions, defaults: Readonly<Partial<ShellOptions>>) {
 	if (defaults.title && !options.title)             options.title       = defaults.title;

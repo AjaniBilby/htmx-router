@@ -1,9 +1,8 @@
-/**
- * This whole file is only for internal use but the generated router for the <Dynamic> component
- */
+import { ServerOnlyWarning } from "./internal/util.js";
+ServerOnlyWarning("dynamic-ref");
 
-import { GenericContext } from "~/router.js";
-import { QuickHash } from "~/util/hash.js";
+import type { GenericContext } from "./router.js";
+import { QuickHash } from "./internal/util.js";
 
 const registry = new Map<string, Loader<unknown>>();
 const index = new Map<Function, string>();

@@ -1,3 +1,6 @@
+import { ServerOnlyWarning } from "./util.js";
+ServerOnlyWarning("client-url");
+
 import { readFile } from "fs/promises";
 
 export async function GetClientEntryURL() {

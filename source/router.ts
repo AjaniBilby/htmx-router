@@ -1,11 +1,29 @@
-import * as endpoint from '~/util/endpoint.js';
-import * as dynamic from '~/util/dynamic.js';
-import * as mount from '~/client/mount.js';
-import * as css from '~/util/css.js';
+import { ServerOnlyWarning } from "./internal/util.js";
+ServerOnlyWarning("router");
 
-import { Parameterize, Parameterized, ParameterShaper } from '~/util/parameters.js';
-import { RouteModule } from "~/types.js";
-import { Cookies } from '~/util/cookies.js';
+import * as endpoint from './endpoint.js';
+import * as dynamic from './dynamic.js';
+import * as mount from './internal/mount.js';
+import * as css from './css.js';
+
+import { Parameterize, Parameterized, ParameterShaper } from './util/parameters.js';
+import { RouteModule } from "./index.js";
+import { Cookies } from './cookies.js';
+
+export function GenerateRouteTree(modules: Record<string, unknown>) {
+	const tree = new RouteTree();
+	for (const path in modules) {
+		const mod = modules[path] as RouteModule<any>;
+		const tail = path.lastIndexOf(".");
+		const url = path.slice(9, tail);
+		tree.ingest(url, mod);
+
+		if (mod.route) mod.route(url as any);
+	}
+
+	return tree;
+}
+
 
 export class GenericContext {
 	request: Request;
@@ -51,50 +69,8 @@ export class RouteContext<T extends ParameterShaper = {}> {
 	}
 }
 
-export class RouteLeaf {
-	module: RouteModule<any>;
 
-	constructor(module: RouteModule<any>) {
-		this.module = module;
-	}
 
-	async resolve(ctx: GenericContext) {
-		const res = await this.renderWrapper(ctx);
-		if (res === null) return null;
-		if (res instanceof Response) return res;
-
-		return ctx.render(res);
-	}
-
-	async error(ctx: GenericContext, e: unknown) {
-		if (!this.module.error) throw e;
-
-		const res = await this.module.error(ctx, e);
-		if (res instanceof Response) return res;
-
-		return ctx.render(res);
-	}
-
-	private async renderWrapper(ctx: GenericContext) {
-		try {
-			if (!this.module.loader && !this.module.action) return null;
-
-			const context = ctx.shape(this.module.parameters || {});
-
-			if (ctx.request.method === "HEAD" || ctx.request.method === "GET") {
-				if (this.module.loader) return await this.module.loader(context);
-				else return null;
-			}
-
-			if (this.module.action) return await this.module.action(context);
-			throw new Response("Method not Allowed", { status: 405, statusText: "Method not Allowed", headers: ctx.headers });
-		} catch (e) {
-			return await this.error(ctx, e);
-		}
-
-		return null;
-	}
-}
 
 
 export class RouteTree {
@@ -236,6 +212,51 @@ export class RouteTree {
 		const caught = await this.slug.error(ctx, res);
 		caught.headers.set("X-Caught", "true");
 		return caught;
+	}
+}
+
+class RouteLeaf {
+	module: RouteModule<any>;
+
+	constructor(module: RouteModule<any>) {
+		this.module = module;
+	}
+
+	async resolve(ctx: GenericContext) {
+		const res = await this.renderWrapper(ctx);
+		if (res === null) return null;
+		if (res instanceof Response) return res;
+
+		return ctx.render(res);
+	}
+
+	async error(ctx: GenericContext, e: unknown) {
+		if (!this.module.error) throw e;
+
+		const res = await this.module.error(ctx, e);
+		if (res instanceof Response) return res;
+
+		return ctx.render(res);
+	}
+
+	private async renderWrapper(ctx: GenericContext) {
+		try {
+			if (!this.module.loader && !this.module.action) return null;
+
+			const context = ctx.shape(this.module.parameters || {});
+
+			if (ctx.request.method === "HEAD" || ctx.request.method === "GET") {
+				if (this.module.loader) return await this.module.loader(context);
+				else return null;
+			}
+
+			if (this.module.action) return await this.module.action(context);
+			throw new Response("Method not Allowed", { status: 405, statusText: "Method not Allowed", headers: ctx.headers });
+		} catch (e) {
+			return await this.error(ctx, e);
+		}
+
+		return null;
 	}
 }
 

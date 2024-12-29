@@ -11,10 +11,6 @@
 		"moduleResolution": "Node",
 		"esModuleInterop": true,
 
-		"jsx": "preserve",
-		"jsxFactory": "JSX.createElement",
-		"jsxFragmentFactory": "JSX.Fragment",
-
 		/* Generates corresponding '.d.ts' file. */
 		"declaration": true,
 
@@ -32,11 +28,7 @@
 		// "skipDefaultLibCheck": true,                      /* Skip type checking .d.ts files that are included with TypeScript. */
 		"skipLibCheck": true,                                /* Skip type checking all .d.ts files. */
 
-		"outDir": "./bin",
-
-		"paths": {
-			"~/*": ["./source/*"]
-		},
+		"outDir": "./"
 	},
 	"include": ["source", "global.d.ts"],
 	"exclude": ["node_modules"]

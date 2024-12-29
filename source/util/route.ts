@@ -1,4 +1,7 @@
-import { ParameterShaper } from "~/util/parameters.js";
+import { ServerOnlyWarning } from "../internal/util.js";
+ServerOnlyWarning("route-path");
+
+import { ParameterShaper } from "./parameters.js";
 
 export function RoutePath<T extends ParameterShaper>() {
 	const frags = new Array<string>();

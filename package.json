@@ -1,6 +1,6 @@
 {
 	"name": "htmx-router",
-	"version": "1.0.0-alpha.5",
+	"version": "1.0.0-alpha.6",
 	"description": "A simple SSR framework with dynamic+client islands",
 	"keywords": [
 		"htmx",
@@ -10,7 +10,7 @@
 	"main": "./index.js",
 	"type": "module",
 	"scripts": {
-		"build": "tsc && tsc-alias"
+		"build": "tsc"
 	},
 	"bin": {
 		"htmx-router": "cli/index.js"
@@ -31,8 +31,8 @@
 	},
 	"devDependencies": {
 		"@types/node": "^20.4.5",
+		"chalk": "^5.4.1",
 		"ts-node": "^10.9.1",
-		"tsc-alias": "^1.8.10",
 		"typescript": "^5.1.6"
 	}
 }

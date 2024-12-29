@@ -68,7 +68,7 @@ function BuildServerManifest(type: string, imported: Imports) {
 		else names.push(imp.mapping.name)
 	}
 
-	let out = "";
+	let out = "/* eslint-disable @typescript-eslint/no-explicit-any */\n";
 	for (const imp of imported) {
 		out += "import ";
 
@@ -87,10 +87,10 @@ function BuildServerManifest(type: string, imported: Imports) {
 			out += " } ";
 		}
 
-		out += `"${imp.href}";\n\n`;
+		out += `from "${imp.href}";\n`;
 	}
 
-	out = `import { StyleClass } from "htmx-router/css";\n`
+	out += `\nimport { StyleClass } from "htmx-router/css";\n`
 		+ `const island = new StyleClass("i", ".this{display:contents;}\\n").name;\n\n`
 		+ "type FirstArg<T> = T extends (arg: infer U, ...args: any[]) => any ? U : never;\n"
 		+ "function mount(name: string, data: string, ssr?: JSX.Element) {\n"
@@ -115,7 +115,7 @@ function BuildServerManifest(type: string, imported: Imports) {
 }
 
 function ImportNameSource(name: ImportName) {
-	if (name.original === name.name) return name;
+	if (name.original === name.name) return name.name;
 	return `${name.original} as ${name.name}`;
 }
 
@@ -135,7 +135,9 @@ function BuildClientManifest(type: string, imports: Imports) {
 	const bind = binding[type as keyof typeof binding];
 	if (!bind) throw new Error(`Unsupported client adapter ${type}`);
 
-	let out = "const client = {\n";
+	let out = "/* eslint-disable @typescript-eslint/no-explicit-any */\n\n";
+
+	out += "const client = {\n";
 	for (const imported of imports) {
 		if (Array.isArray(imported.mapping)) {
 			for (const map of imported.mapping) {

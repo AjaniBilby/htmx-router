@@ -1,9 +1,10 @@
-const generic = `import { DynamicReference } from "htmx-router/dynamic";
-import { GenericContext } from "htmx-router/router";
+const generic = `import { Parameterized, ParameterShaper } from "htmx-router/util/parameters";
+import { DynamicReference } from "htmx-router/dynamic";
+import { RenderFunction } from "htmx-router";
 
-export function Dynamic<T extends Record<string, string>>(props: {
-	params?: T,
-	loader: (ctx: GenericContext, params?: T) => Promise<JSX.Element>
+export function Dynamic<T extends ParameterShaper>(props: {
+	params?: Parameterized<T>,
+	loader:  RenderFunction<T>,
 	children?: JSX.Element
 }): JSX.Element {
 	return <div

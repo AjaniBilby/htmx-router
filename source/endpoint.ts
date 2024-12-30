@@ -11,14 +11,14 @@ const registry = new Map<string, Endpoint>();
  * The name is optional and will be inferred from the function if not given (helpful for network waterfalls)
  */
 export class Endpoint {
-	readonly render: RenderFunction<RouteContext>;
+	readonly render: RenderFunction<{}>;
 	readonly name: string;
 	readonly url:  string;
 
-	constructor(render: RenderFunction<RouteContext<{}>>, name?: string) {
+	constructor(render: RenderFunction<{}>, name?: string) {
 		this.render = render;
 
-		name ||= render.constructor.name;
+		name ||= render.name;
 
 		const hash = QuickHash(String(render));
 		this.name = name ? `${encodeURIComponent(name)}-${hash}` : hash;

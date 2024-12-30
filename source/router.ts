@@ -2,7 +2,7 @@ import { ServerOnlyWarning } from "./internal/util.js";
 ServerOnlyWarning("router");
 
 import type { GenericContext } from "./internal/router.js";
-import { Parameterize, Parameterized, ParameterShaper } from './util/parameters.js';
+import { Parameterized, ParameterPrelude, ParameterShaper } from './util/parameters.js';
 import { RouteModule } from "./index.js";
 import { Cookies } from './cookies.js';
 
@@ -49,13 +49,26 @@ export class RouteContext<T extends ParameterShaper = {}> {
 
 	render: (res: JSX.Element) => Response;
 
-	constructor(base: GenericContext, shape: T) {
-		this.params = Parameterize(base.params, shape);
+	constructor(base: GenericContext | RouteContext, params: ParameterPrelude<T>, shape: T) {
 		this.cookie  = base.cookie;
 		this.headers = base.headers;
 		this.request = base.request;
 		this.render = base.render;
 		this.url = base.url;
+
+
+		this.params = {} as Parameterized<T>;
+		for (const key in shape) {
+			if (!(key in params)) console.warn(`Parameter ${key} not present in route, but defined in parameters`);
+
+			const func = shape[key];
+			const val = func(params[key] || "");
+
+			// NaN moment
+			if ((func as unknown) === Number && typeof val === "number" && isNaN(val)) throw new Error("Invalid Number");
+
+			this.params[key] = val;
+		}
 	}
 }
 

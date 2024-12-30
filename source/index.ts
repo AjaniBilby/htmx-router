@@ -3,14 +3,14 @@ import type { RouteContext } from "./router.js";
 
 import { createRequestHandler } from "./internal/request/index.js";
 
-export type RenderFunction<T> = (args: T) => Promise<Response | JSX.Element | null>;
-export type CatchFunction<T> = (args: T, err: unknown) => Promise<Response | JSX.Element>;
+export type RenderFunction<T extends ParameterShaper = {}> = (ctx: RouteContext<T>) => Promise<Response | JSX.Element | null>;
+export type CatchFunction<T extends ParameterShaper = {}> = (ctx: RouteContext<T>, err: unknown) => Promise<Response | JSX.Element>;
 
 export type RouteModule<T extends ParameterShaper> = {
 	parameters?: T;
-	loader?:     RenderFunction<RouteContext<T>>;
-	action?:     RenderFunction<RouteContext<T>>;
-	error?:      CatchFunction <RouteContext<T>>;
+	loader?:     RenderFunction<T>;
+	action?:     RenderFunction<T>;
+	error?:      CatchFunction <T>;
 	route?:      (params: Record<string, string>) => string;
 }
 

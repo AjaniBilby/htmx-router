@@ -1,7 +1,7 @@
 import { ServerOnlyWarning } from "./util.js";
 ServerOnlyWarning("internal/router");
 
-import { ParameterShaper } from '../util/parameters.js';
+import { ParameterPrelude, ParameterShaper } from '../util/parameters.js';
 import { RouteContext } from "../router.js";
 import { Cookies } from '../cookies.js';
 
@@ -26,6 +26,6 @@ export class GenericContext {
 	}
 
 	shape<T extends ParameterShaper>(shape: T) {
-		return new RouteContext(this, shape);
+		return new RouteContext(this, this.params as ParameterPrelude<T>, shape);
 	}
 }

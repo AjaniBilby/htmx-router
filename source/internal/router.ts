@@ -15,12 +15,12 @@ export class GenericContext {
 	render: (res: JSX.Element) => Response;
 
 	constructor(request: GenericContext["request"], url: GenericContext["url"], renderer: GenericContext["render"]) {
-		this.cookie = new Cookies(request.headers);
+		this.cookie  = new Cookies(request.headers.get("cookie"));
 		this.headers = new Headers();
 		this.request = request;
-		this.params = {};
-		this.url = url;
-		this.render = renderer;
+		this.params  = {};
+		this.url     = url;
+		this.render  = renderer;
 
 		this.headers.set("x-powered-by", "htmx-router");
 	}

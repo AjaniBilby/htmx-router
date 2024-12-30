@@ -14,42 +14,48 @@ export interface CookieOptions {
  * Helper provided in the Generic and RouteContext which provides reading and updating cookies
  */
 export class Cookies {
-	private map: { [key: string]: string };
+	private source: string | null;
 	private config: { [key: string]: CookieOptions };
+	private map: { [key: string]: string } ;
 
-	constructor(headers: Headers) {
+	constructor(source?: string | null) {
+		this.source = source || null;
 		this.config = {};
 		this.map = {};
+	}
 
-		const cookie = headers.get("Cookie");
-		if (!cookie) return;
+	private parse () {
+		if (this.source === null) return;
 
-		for (const line of cookie.split("; ")) {
+		for (const line of this.source.split("; ")) {
 			const [ name, value ] = line.split("=");
 			this.map[name] = value;
 		}
+		this.source = null;
 	}
 
 	get(name: string) {
+		this.parse();
 		return this.map[name] || null;
 	}
 
 	has(name: string) {
+		this.parse();
 		return name in this.map;
 	}
 
 	set(name: string, value: string, options: CookieOptions = {}) {
-		if (!options['path']) options['path'] = "/";
+		this.parse();
+		options.path ||= "/";
 
 		this.config[name] = options;
 		this.map[name] = value;
-	}
 
-	flash(name: string, value: string) {
-		return this.set(name, value, { maxAge: 0 })
+		if (typeof document === "object") document.cookie = `${name}=${value}`;
 	}
 
 	unset(name: string) {
+		this.parse();
 		return this.set(name, "", { maxAge: 0 })
 	}
 

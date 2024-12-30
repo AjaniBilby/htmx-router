@@ -33,7 +33,7 @@ export function RegisterDynamic<T extends ParameterShaper>(shape: T, func: Rende
 
 
 
-export function DynamicReference<T extends ParameterShaper>(func: RenderFunction<T>, params?: Parameterized<T>) {
+export function DynamicReference<T extends ParameterShaper>(func: RenderFunction<T>, params?: Parameterized<T>): string {
 	const entry = index.get(func);
 	let url: string;
 	if (!entry) {
@@ -44,7 +44,7 @@ export function DynamicReference<T extends ParameterShaper>(func: RenderFunction
 		url = entry.url;
 	}
 
-	if (!params) return entry;
+	if (!params) return url;
 
 	const query = new URLSearchParams();
 	if (entry?.converter) {
@@ -96,3 +96,4 @@ export async function loader(ctx: RouteContext<typeof parameters>) {
 	ctx.headers.set("X-Partial", "true");
 	return ctx.render(res);
 }
+export const action = loader;

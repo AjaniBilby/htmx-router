@@ -49,3 +49,4 @@ export async function loader(ctx: RouteContext<typeof parameters>) {
 
 	return ctx.render(res);
 }
+export const action = loader;

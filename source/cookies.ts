@@ -39,6 +39,18 @@ export class Cookies {
 		return this.map[name] || null;
 	}
 
+	entries(): Array<[string, string]> {
+		this.parse();
+		return Object.entries(this.map);
+	}
+
+	*[Symbol.iterator](): IterableIterator<[string, string]> {
+		this.parse();
+		for (const [key, value] of Object.entries(this.map)) {
+			yield [key, value];
+		}
+	}
+
 	has(name: string) {
 		this.parse();
 		return name in this.map;

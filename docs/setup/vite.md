@@ -65,6 +65,16 @@ We also recommend using [tsconfig paths](https://www.npmjs.com/package/vite-tsco
 
 ```
 
+### Bundle Splitter
+
+The bundle splitter will omit certain code from the client and server builds, if a file ends with `.client.tsx` (also supports `.ts`, `.js` `.jsx`) then it will be omitted from the server bundled, and likewise if it ends with `.server.tsx` for the client.
+
+This can be helpful to ensure certain code never leaks into the client. Or that expensive client side rendering for interactivity it processed on the server.
+
+### Client Island
+
+This plugin will intercept imports for your `app/manifest.tsx` within vite and instead will import either the server side hydration code, or the client side manifest for hydration based on which mode is being built.
+
 ## Build Scripts
 
 Since there is a client and a server build being generated, we recommend making a build setup like below so everything can be streamlined

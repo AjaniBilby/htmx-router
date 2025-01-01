@@ -4,3 +4,6 @@
 !readme.md
 !**/*.d.ts
 !**/*.js
+
+/example/*
+/site/*

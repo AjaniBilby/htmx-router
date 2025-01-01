@@ -1,4 +1,4 @@
-import Client from "~/client";
+import Client from "~/manifest";
 import { ServerDialog } from "~/component/dialog";
 import { RoutePath } from "htmx-router";
 

@@ -1,5 +1,6 @@
 import crypto from 'crypto';
-import { GenericContext, text } from "htmx-router";
+import type { RouteContext } from "htmx-router/router";
+import { text } from "htmx-router/response";
 
 import { GetChallenge } from "~/model/passkey";
 import { UserLogin } from '~/model/user';
@@ -8,7 +9,7 @@ import { Timeout } from '~/util';
 import { prisma } from "~/db.server";
 
 
-export async function action(ctx: GenericContext) {
+export async function action(ctx: RouteContext) {
 	ctx.headers.set("X-Caught", "true");
 
 	const [ result, ] = await Promise.all([
@@ -21,7 +22,7 @@ export async function action(ctx: GenericContext) {
 
 
 // https://webauthn.guide/#authentication
-async function HardwareAuthenticate({ request, headers, cookie }: GenericContext) {
+async function HardwareAuthenticate({ request, headers, cookie }: RouteContext) {
 	const body = await request.json();
 
 	const utf8Decoder = new TextDecoder('utf-8');

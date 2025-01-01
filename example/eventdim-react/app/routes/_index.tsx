@@ -1,11 +1,11 @@
-import { GenericContext } from "htmx-router";
+import { RouteContext } from "htmx-router/router";
 
 import { KillFeedMessage } from "~/model/kill-feed";
 import { GetUserID } from "~/model/user";
 
 import { shell } from "./$";
 
-export async function loader({ request, cookie }: GenericContext) {
+export async function loader({ request, cookie }: RouteContext) {
 	const userID = await GetUserID(request, cookie);
 
 	if (userID) {

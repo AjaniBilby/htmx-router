@@ -1,4 +1,5 @@
-import { GenericContext, text } from "htmx-router";
+import type { RouteContext } from "htmx-router/router";
+import { text } from "htmx-router/response";
 
 import { HashPassword, UserLogin } from "~/model/user";
 
@@ -7,7 +8,7 @@ import { Colors } from "@prisma/client";
 import { COLORS } from "~/util/color";
 
 
-export async function action({ request, headers, cookie }: GenericContext) {
+export async function action({ request, headers, cookie }: RouteContext) {
 	headers.set("X-Caught", "true"); // don't wrap an error in HTML
 
 	const formData = await request.formData();

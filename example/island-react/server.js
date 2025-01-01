@@ -17,11 +17,12 @@ const viteDevServer =
 				})
 			);
 
-app.use(
-	viteDevServer
-		? viteDevServer.middlewares
-		: express.static("./dist/client")
-);
+if (viteDevServer) {
+	app.use(viteDevServer.middlewares)
+} else {
+	app.use(express.static("./dist/client"));
+	app.use("/dist/asset", express.static("./dist/server/dist/asset",));
+}
 
 // logging
 app.use(morgan("tiny"));
@@ -41,12 +42,10 @@ app.use('*', createRequestHandler.http({
 	}
 }));
 
-
 // Start http server
 app.listen(port, () => {
 	console.log(`Server started at http://localhost:${port}`)
 })
-
 
  // Reload pages on file change
 if (viteDevServer)

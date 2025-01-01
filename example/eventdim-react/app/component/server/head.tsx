@@ -1,7 +1,6 @@
-import { RenderMetaDescriptor, ShellOptions } from "htmx-router";
+import { RenderMetaDescriptor, ShellOptions } from "htmx-router/shell";
 import { renderToString } from 'react-dom/server';
 import { ReactNode } from "react";
-
 
 export function Head<T>(props: { options: ShellOptions<T>, children: ReactNode }) {
 	const body = RenderMetaDescriptor(props.options)

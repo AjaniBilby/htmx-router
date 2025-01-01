@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
-import { GenericContext, text } from "htmx-router";
+import type { RouteContext } from "htmx-router/router";
+import { text } from "htmx-router/response";
 
 import { UserLogin } from "~/model/user";
 
@@ -7,7 +8,7 @@ import { Timeout } from "~/util";
 import { prisma } from "~/db.server";
 
 
-export async function action(ctx: GenericContext) {
+export async function action(ctx: RouteContext) {
 	ctx.headers.set("X-Caught", "true");
 
 	const [ result, ] = await Promise.all([
@@ -18,7 +19,7 @@ export async function action(ctx: GenericContext) {
 	return result;
 }
 
-async function PasswordLogin({ request, headers, cookie }: GenericContext) {
+async function PasswordLogin({ request, headers, cookie }: RouteContext) {
 	const formData = await request.formData();
 	const username = String(formData.get("username"));
 	const password = String(formData.get("password"));

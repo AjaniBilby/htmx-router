@@ -20,11 +20,12 @@ const viteDevServer =
 				})
 			);
 
-app.use(
-	viteDevServer
-		? viteDevServer.middlewares
-		: express.static("./dist/client")
-);
+if (viteDevServer) {
+	app.use(viteDevServer.middlewares)
+} else {
+	app.use(express.static("./dist/client"));
+	app.use("/dist/asset", express.static("./dist/server/dist/asset",));
+}
 
 // logging
 app.use(morgan("tiny"));
@@ -80,11 +81,10 @@ const shutdown = () => {
 process.on('SIGTERM', shutdown);
 process.on('SIGHUP', shutdown);
 
-
-process .on('unhandledRejection', (reason, p) => {
+process.on('unhandledRejection', (reason, p) => {
 	console.error(reason, 'Unhandled Rejection at Promise', p);
-})
-.on('uncaughtException', err => {
+});
+process.on('uncaughtException', err => {
 	console.error(err, 'Uncaught Exception thrown');
 	process.exit(1);
 });

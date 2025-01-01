@@ -10,8 +10,6 @@ import { ReadConfig } from "./config.js";
 
 const config = await ReadConfig();
 
-console.info("");
-
 if (config.client) {
 	console.info(`Generating ${chalk.green("client island")} manifest`);
 	const source = await readFile(config.client.source, "utf8");

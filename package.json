@@ -22,7 +22,7 @@
 	"bugs": {
 		"url": "https://github.com/AjaniBilby/htmx-router/issues"
 	},
-	"homepage": "https://github.com/AjaniBilby/htmx-router#readme",
+	"homepage": "https://htmx-router.ajanibilby.com/",
 	"dependencies": {
 		"es-module-lexer": "^1.5.4",
 		"vite": "^6.0.6"

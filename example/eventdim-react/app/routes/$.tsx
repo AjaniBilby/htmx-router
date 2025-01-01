@@ -1,11 +1,12 @@
-import { GenericContext, ShellOptions } from "htmx-router";
+import { ShellOptions } from "htmx-router/shell";
+import { RouteContext } from "htmx-router/router";
 
+import { Scripts } from "~/component/server/scripts";
 import { Navbar } from "~/component/navbar";
 import { Head } from "~/component/server/head";
 
 import mainsheetUrl from "~/styles/main.css?url";
 import { site_theme } from "~/util";
-import { Scripts } from "~/router";
 
 
 
@@ -43,7 +44,7 @@ export async function shell(inner: JSX.Element, options: ShellOptions) {
 }
 
 
-export async function error(ctx: GenericContext, e: unknown) {
+export async function error(ctx: RouteContext, e: unknown) {
 	const message = await ErrorBody(e)
 
 	return <html lang="en" >

@@ -1,5 +1,8 @@
-import { defineConfig } from "vite";
+import { BundleSplitter, ClientIsland } from "htmx-router/vite";
+import { defineConfig, UserConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
+
+type T = NonNullable<UserConfig["plugins"]>[number];
 
 export default defineConfig({
 	ssr: {
@@ -15,6 +18,8 @@ export default defineConfig({
 		manifest: true
 	},
 	plugins: [
+		ClientIsland("react") as T,
+		BundleSplitter() as T,
 		tsconfigPaths()
 	],
 });

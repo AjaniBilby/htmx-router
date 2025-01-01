@@ -1,5 +1,5 @@
-import "~/client.manifest";
 import "~/client/request";
+import "~/manifest";
 
 document.body.addEventListener('htmx:beforeOnLoad', function (e) {
 	const evt = e as CustomEvent<{

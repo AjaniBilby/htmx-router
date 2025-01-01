@@ -1,6 +1,6 @@
-const generic = `import { Parameterized, ParameterShaper } from "htmx-router/util/parameters";
+import { Parameterized, ParameterShaper } from "htmx-router/util/parameters";
 import { RenderFunction } from "htmx-router";
-import { Deferral } from "htmx-router/defer";
+import { Deferral } from "htmx-router/dynamic";
 
 export function Defer<T extends ParameterShaper>(props: {
 	params?: Parameterized<T>,
@@ -13,8 +13,4 @@ export function Defer<T extends ParameterShaper>(props: {
 		hx-swap="outerHTML transition:true"
 		style={{ display: "contents" }}
 	>{props.children ? props.children : ""}</div>
-}`;
-
-export default {
-	"*": generic
 }

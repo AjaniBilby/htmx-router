@@ -1,6 +1,6 @@
 const generic = `import { Parameterized, ParameterShaper } from "htmx-router/util/parameters";
 import { RenderFunction } from "htmx-router";
-import { Deferral } from "htmx-router/dynamic";
+import { Deferral } from "htmx-router/defer";
 
 export function Defer<T extends ParameterShaper>(props: {
 	params?: Parameterized<T>,

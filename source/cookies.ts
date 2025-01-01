@@ -30,7 +30,10 @@ export class Cookies {
 		const source = typeof this.source === "object" ? this.source.cookie : this.source;
 
 		for (const line of source.split("; ")) {
-			const [ name, value ] = line.split("=");
+			let [ name, value ] = line.split("=");
+			name = decodeURIComponent(name);
+			value = decodeURIComponent(value);
+
 			this.map[name] = value;
 		}
 
@@ -67,7 +70,7 @@ export class Cookies {
 		this.config[name] = options;
 		this.map[name] = value;
 
-		if (typeof this.source === "object") document.cookie = `${name}=${value}`;
+		if (typeof this.source === "object") document.cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}`;
 	}
 
 	unset(name: string) {
@@ -98,7 +101,7 @@ export class Cookies {
 				config += `; ${prop}=${value}`;
 			}
 
-			const cookie = name+"="+this.map[name]+config+";";
+			const cookie = encodeURIComponent(name)+"="+encodeURIComponent(this.map[name])+config+";";
 			headers.push(cookie);
 		}
 		return headers;

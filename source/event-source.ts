@@ -29,7 +29,7 @@ export class EventSource {
 		this.response = new Response(stream, { headers });
 
 		this.timer = setInterval(() => this.keepAlive(), keepAlive);
-		register.push(this);
+		register.add(this);
 	}
 
 	get readyState() {
@@ -64,10 +64,7 @@ export class EventSource {
 	close (unlink = true) {
 		if (this.state === 2) return false;
 
-		if (unlink) {
-			const i = register.indexOf(this);
-			if (i !== -1) register.splice(i, 1);
-		}
+		if (unlink) register.delete(this);
 
 		try {
 			this.controller?.close();
@@ -134,13 +131,11 @@ headers.set("Connection", "keep-alive");
 
 // Auto close all SSE streams when shutdown requested
 // Without this graceful shutdowns will hang indefinitely
-const register = new Array<EventSource>();
+const register = new EventSourceSet();
 function CloseAll() {
-	for (const connection of register) connection.close(false); // don't waste time unregistering
+	register.closeAll();
 }
 if (process) {
 	process.on('SIGTERM', CloseAll);
-	process.on('SIGHUP', CloseAll);
-} else {
-	console.warn("htmx-router's EventSource has been unsafely loaded on the client");
+	process.on('SIGTERM', CloseAll);
 }

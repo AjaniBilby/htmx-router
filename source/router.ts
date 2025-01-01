@@ -8,7 +8,7 @@ import { Cookies } from './cookies.js';
 
 // builtin routes
 import * as endpoint from './endpoint.js';
-import * as dynamic from './dynamic.js';
+import * as dynamic from './defer.js';
 import * as mount from './internal/mount.js';
 import * as css from './css.js';
 

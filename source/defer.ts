@@ -14,12 +14,12 @@ const index = new Map<Function, IndexEntry<{}>>();
 function MakeIdentity(func: Function) {
 	const hash = QuickHash(String(func));
 	const name = `${encodeURIComponent(func.name)}-${hash}`;
-	const url = `/_/dynamic/${name}`;
+	const url = `/_/defer/${name}`;
 
 	return { name, url };
 }
 
-export function RegisterDynamic<T extends ParameterShaper>(shape: T, func: RenderFunction<T>, converter?: Parameterizer<T>) {
+export function RegisterDeferral<T extends ParameterShaper>(shape: T, func: RenderFunction<T>, converter?: Parameterizer<T>) {
 	const existing = index.get(func);
 	if (existing) return existing.url;
 
@@ -33,7 +33,7 @@ export function RegisterDynamic<T extends ParameterShaper>(shape: T, func: Rende
 
 
 
-export function DynamicReference<T extends ParameterShaper>(func: RenderFunction<T>, params?: Parameterized<T>): string {
+export function Deferral<T extends ParameterShaper>(func: RenderFunction<T>, params?: Parameterized<T>): string {
 	const entry = index.get(func);
 	let url: string;
 	if (!entry) {
@@ -68,7 +68,7 @@ export function DynamicReference<T extends ParameterShaper>(func: RenderFunction
 /**
  * RouteTree mounting point
  */
-export const path = "_/dynamic/$";
+export const path = "_/defer/$";
 
 export const parameters = {
 	"$": String
@@ -83,7 +83,7 @@ export async function loader(ctx: RouteContext<typeof parameters>) {
 
 	const entry = index.get(endpoint);
 	if (!entry) {
-		console.warn(`Warn: Function ${endpoint.name} was not registered for dynamic use`);
+		console.warn(`Warn: Function ${endpoint.name} was not registered for defer use`);
 		return null;
 	}
 

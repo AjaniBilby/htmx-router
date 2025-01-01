@@ -2,12 +2,12 @@ import { ServerOnlyWarning } from "./internal/util.js";
 ServerOnlyWarning("shell");
 
 export type ShellOptions<D = {}> = D & MetaDescriptor;
-export function ApplyMetaDescriptorDefaults(options: ShellOptions, defaults: Readonly<Partial<ShellOptions>>) {
-	if (defaults.title && !options.title)             options.title       = defaults.title;
+export function ApplyMetaDefaults(options: ShellOptions, defaults: Readonly<Partial<ShellOptions>>) {
+	if (defaults.title       && !options.title)       options.title       = defaults.title;
 	if (defaults.description && !options.description) options.description = defaults.description;
 
-	if (defaults.meta && !options.meta)     options.meta   = defaults.meta;
-	if (defaults.og && !options.og)         options.og     = defaults.og;
+	if (defaults.meta   && !options.meta)   options.meta   = defaults.meta;
+	if (defaults.og     && !options.og)     options.og     = defaults.og;
 	if (defaults.jsonLD && !options.jsonLD) options.jsonLD = defaults.jsonLD;
 }
 
@@ -35,12 +35,18 @@ export function RenderMetaDescriptor<T>(options: ShellOptions<T>) {
 		out += `<script type="application/ld+json">${JSON.stringify(json)}</script>\n`;
 	}
 
-	// Auto apply og:title + og:description if not present
-	if (options.title && !options.og?.title) out += `<meta property="og:title" content="${EscapeHTML(options.title)}">\n`;
-	if (options.description && !options.og?.description) out += `<meta property="og:description" content="${EscapeHTML(options.description)}">\n`;
-
 	// Apply open graphs
-	if (options.og) out += RenderOpenGraph(options.og);
+	if (options.og) {
+		// Infer from meta if not present
+		if (!options.og.title) options.og.title = options.title;
+		if (!options.og.description) options.og.title = options.description;
+
+		out += RenderOpenGraph(options.og);
+	} else {
+		// Auto apply og:title + og:description if og not present
+		if (options.title) out += `<meta property="og:title" content="${EscapeHTML(options.title)}">\n`;
+		if (options.description) out += `<meta property="og:description" content="${EscapeHTML(options.description)}">\n`;
+	}
 
 	return out;
 }

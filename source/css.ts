@@ -3,14 +3,14 @@ import { QuickHash } from "./internal/util.js";
 
 const classNamePattern = /^[a-zA-Z_][a-zA-Z0-9_-]*$/;
 
-const registry = new Map<String, StyleClass>();
+const registry = new Map<String, Style>();
 let cache: { sheet: string, hash: string } | null = null;
 
 /**
  * Create a new css class to be included in the sheet
  * Use .this as your class name in the source, and it will be replaced with a unique name
  */
-export class StyleClass {
+export class Style {
 	readonly name:  string; // unique name generated based on the original name and hash of the style
 	readonly style: string; // the mutated source
 	readonly hash:  string;

@@ -1,7 +1,7 @@
-import dynamic from "./dynamic.js";
+import defer   from "./defer.js";
 import scripts from "./scripts.js";
 import head    from "./head.js";
 
 export {
-	dynamic, head, scripts
+	defer, head, scripts
 }

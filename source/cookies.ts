@@ -14,11 +14,11 @@ export interface CookieOptions {
  * Helper provided in the Generic and RouteContext which provides reading and updating cookies
  */
 export class Cookies {
-	private source: string | null;
+	private source: Document | string | null;
 	private config: { [key: string]: CookieOptions };
 	private map: { [key: string]: string } ;
 
-	constructor(source?: string | null) {
+	constructor(source?: Document | string | null) {
 		this.source = source || null;
 		this.config = {};
 		this.map = {};
@@ -27,11 +27,15 @@ export class Cookies {
 	private parse () {
 		if (this.source === null) return;
 
-		for (const line of this.source.split("; ")) {
+		const source = typeof this.source === "object" ? this.source.cookie : this.source;
+
+		for (const line of source.split("; ")) {
 			const [ name, value ] = line.split("=");
 			this.map[name] = value;
 		}
-		this.source = null;
+
+		// keep source it document
+		if (typeof this.source === "string") this.source = null;
 	}
 
 	get(name: string) {
@@ -63,7 +67,7 @@ export class Cookies {
 		this.config[name] = options;
 		this.map[name] = value;
 
-		if (typeof document === "object") document.cookie = `${name}=${value}`;
+		if (typeof this.source === "object") document.cookie = `${name}=${value}`;
 	}
 
 	unset(name: string) {
@@ -71,6 +75,7 @@ export class Cookies {
 		return this.set(name, "", { maxAge: 0 })
 	}
 
+	/** Creates the response headers required to make the changes done to these cookies */
 	export() {
 		const headers = new Array<string>();
 		for (const name in this.config) {

@@ -1,13 +1,25 @@
-import { ErrorResponse, Redirect, Outlet, Override } from "./shared";
-import { RouteTree, IsAllowedExt } from "./router";
-import { RenderArgs } from "./render-args";
-import { Link } from "./components";
-import { StyleCSS } from "./helper";
+import type { ParameterShaper } from "./util/parameters.js";
+import type { RouteContext } from "./router.js";
 
+import { createRequestHandler } from "./internal/request/index.js";
 
-export {
-	IsAllowedExt, RouteTree,
-	ErrorResponse, Redirect, Override, RenderArgs, Outlet,
-	StyleCSS,
-	Link
+export type RenderFunction<T extends ParameterShaper = {}> = (ctx: RouteContext<T>) => Promise<Response | JSX.Element | null>;
+export type CatchFunction<T extends ParameterShaper = {}> = (ctx: RouteContext<T>, err: unknown) => Promise<Response | JSX.Element>;
+
+export type RouteModule<T extends ParameterShaper> = {
+	parameters?: T;
+	loader?:     RenderFunction<T>;
+	action?:     RenderFunction<T>;
+	error?:      CatchFunction <T>;
+	route?:      (params: Record<string, string>) => string;
 }
+
+export type ClientIslandManifest<T> = {
+	[K in keyof T]: ClientIsland<T[K]>;
+};
+type ClientIsland<T> = T extends (props: infer P) => JSX.Element
+	? (props: P & { children?: JSX.Element }) => JSX.Element
+	: T;
+
+
+export { createRequestHandler, RouteContext };

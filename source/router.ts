@@ -1,131 +1,117 @@
-import type http from "node:http";
-import {
-	ErrorResponse,
-	Override,
-	Redirect,
-	RouteModule
-} from "./shared";
+import { ServerOnlyWarning } from "./internal/util.js";
+ServerOnlyWarning("router");
 
-import {
-	MaskType,
-	RenderArgs
-} from "./render-args";
+import type { GenericContext } from "./internal/router.js";
+import { Parameterized, ParameterPrelude, ParameterShaper } from './util/parameters.js';
+import { RouteModule } from "./index.js";
+import { Cookies } from './cookies.js';
 
-import * as BlankRoute from "./404-route";
+// builtin routes
+import * as endpoint from './endpoint.js';
+import * as dynamic from './defer.js';
+import * as mount from './internal/mount.js';
+import * as css from './css.js';
 
-export function IsAllowedExt(ext: string) {
-	if (ext[0] !== ".") return false;
+export function GenerateRouteTree(props: {
+	modules: Record<string, unknown>,
+	scope: string,
+}) {
+	if (!props.scope.endsWith("/")) props.scope += "/";
 
-	// js, jsx, tsx, ts
-	if (ext[2] !== "s") return false;
-	if (ext[1] !== "j" && ext[1] !== "t" ) return false;
+	const tree = new RouteTree();
+	for (const path in props.modules) {
+		const mod  = props. modules[path] as RouteModule<any>;
+		const tail = path.lastIndexOf(".");
+		const url  = path.slice(props.scope.length, tail);
+		tree.ingest(url, mod);
 
-	if (ext.length == 3) return true;
-	if (ext.length != 4) return false;
-	if (ext[3] !== "x") return false;
+		if (mod.route) mod.route(url as any);
+	}
 
-	return true;
+	// ingest router builtins
+	tree.ingest(endpoint.path, endpoint);
+	tree.ingest(dynamic.path, dynamic);
+	tree.ingest(mount.path, mount);
+	tree.ingest(css.path, css);
+
+	return tree;
 }
 
 
-export class RouteLeaf {
-	module : RouteModule;
-	mask   : boolean[];
 
-	constructor(module: RouteModule, mask: boolean[]) {
-		this.module = module;
-		this.mask   = mask;
-	}
 
-	async render(args: RenderArgs, mask: MaskType, routeName: string): Promise<string> {
-		try {
-			// Always check auth
-			// If auth error this function will throw
-			if (this.module.Auth) await this.module.Auth(args);
+export class RouteContext<T extends ParameterShaper = {}> {
+	readonly request: Request;
+	readonly headers: Headers; // response headers
+	readonly cookie:  Cookies;
+	readonly params:  Parameterized<T>;
+	readonly url:     URL;
 
-			if (mask === MaskType.show) {
-				if (this.module.Render)
-					return await this.module.Render(routeName, args);
-			} else {
-				return await args.Outlet();
-			}
-		} catch (e) {
-			if (e instanceof Redirect || e instanceof Override)
-				throw e;
+	render: (res: JSX.Element) => Response;
 
-			const err = (e instanceof ErrorResponse) ? e :
-				new ErrorResponse(500, "Runtime Error", e);
+	constructor(base: GenericContext | RouteContext, params: ParameterPrelude<T>, shape: T) {
+		this.cookie  = base.cookie;
+		this.headers = base.headers;
+		this.request = base.request;
+		this.render = base.render;
+		this.url = base.url;
 
-			if (this.module.CatchError)
-				return await this.module.CatchError(routeName, args, err);
 
-			throw err;
+		this.params = {} as Parameterized<T>;
+		for (const key in shape) {
+			if (!(key in params)) console.warn(`Parameter ${key} not present in route, but defined in parameters`);
+
+			const func = shape[key];
+			const val = func(params[key] || "");
+
+			// NaN moment
+			if ((func as unknown) === Number && typeof val === "number" && isNaN(val)) throw new Error("Invalid Number");
+
+			this.params[key] = val;
 		}
-
-		return "";
 	}
 }
 
 
-const blankLeaf = new RouteLeaf(BlankRoute, []);
+
 
 
 export class RouteTree {
-	nested   : Map<string, RouteTree>;
-
-	// Wild card route
-	// e.g. $userID
-	wild: RouteTree | null;
-	wildCard: string;
+	private nested: Map<string, RouteTree>;
 
 	// Leaf nodes
-	default : RouteLeaf | null; // about.index_
-	route   : RouteLeaf | null; // about
+	private index: RouteLeaf | null; // _index.tsx
+
+	// Wild card routes
+	private slug: RouteLeaf | null; // $
+	private wild: RouteTree | null; // e.g. $userID
+	private wildCard: string;
 
 	constructor() {
-		this.nested   = new Map();
+		this.nested = new Map();
+		this.index  = null;
+
 		this.wildCard = "";
 		this.wild = null;
-
-		this.default = null;
-		this.route   = null;
+		this.slug = null;
 	}
 
-	assignRoot(module: RouteModule) {
-		if (!module.Render)
-			throw new Error(`Root route is missing Render()`);
-		if (!module.CatchError)
-			throw new Error(`Root route is missing CatchError()`);
+	ingest(path: string | string[], module: RouteModule<any>) {
+		if (!Array.isArray(path)) path = path.split("/");
 
-		this.route = new RouteLeaf(module, []);
-	}
 
-	ingest(path: string| string[], module: RouteModule, override: boolean[]) {
-		if (!Array.isArray(path)) {
-			path = path.split(/[\./\\]/g);
-		}
-
-		if (path.length === 0) {
-			override.push(false);
-			this.route = new RouteLeaf(module, override);
-			return;
-		}
-		if (path.length === 1 && path[0] === "_index") {
-			override.push(false);
-			this.default = new RouteLeaf(module, override);
+		if (path.length === 0 || (path.length == 1 && path[0] === "_index")) {
+			this.index = new RouteLeaf(module);
 			return;
 		}
 
-		if (path[0].endsWith("_")) {
-			path[0] = path[0].slice(0, -1);
-			override.push(true);
-		} else {
-			override.push(false);
+		if (path[0] === "$") {
+			this.slug = new RouteLeaf(module);
+			return;
 		}
 
 		if (path[0][0] === "$") {
 			const wildCard = path[0].slice(1);
-
 			// Check wildcard isn't being changed
 			if (!this.wild) {
 				this.wildCard = wildCard;
@@ -135,7 +121,7 @@ export class RouteTree {
 			}
 
 			path.splice(0, 1);
-			this.wild.ingest(path, module, override);
+			this.wild.ingest(path, module);
 			return;
 		}
 
@@ -146,156 +132,122 @@ export class RouteTree {
 		}
 
 		path.splice(0, 1);
-		next.ingest(path, module, override);
+		next.ingest(path, module);
 	}
 
-
-	calculateDepth(from: string[], to: string[]): number {
-		let depth = 0;
-		if (from.length == 0 || to.length == 0) {
-			depth = 1;
-		} else {
-			const segmentA = from.splice(0, 1)[0];
-			const segmentB = to.splice(0, 1)[0];
-			const subRoute = this.nested.get(segmentA);
-
-			if (subRoute && segmentA === segmentB) {
-				depth = subRoute.calculateDepth(from, to);
-			} else if (this.wild) {
-				depth = this.wild.calculateDepth(from, to);
-			} else {
-				return 1;
-			}
-		}
-
-		depth++;
-		return depth;
-	}
-
-
-	async render(req: http.IncomingMessage, res: http.ServerResponse, url: URL) {
-		if (url.pathname.length != 1 && url.pathname.endsWith("/")) {
-			return new Redirect(url.pathname.slice(0, -1) + url.search);
-		}
-
-		const args = new RenderArgs(req, res, url);
-
-		res.setHeader('Vary', "hx-current-url");
-		const from = req.headers['hx-current-url'] ?
-			new URL(req.headers['hx-current-url']?.toString() || "/").pathname :
-			"";
+	async resolve(fragments: string[], ctx: GenericContext): Promise<Response | null> {
+		if (!this.slug) return await this._resolve(fragments, ctx);
 
 		try {
-			const depth = BuildOutlet(this, args, from);
-			if (from) {
-				res.setHeader('HX-Push-Url', req.url || "/");
-				if (depth > 0) {
-					res.setHeader('HX-Retarget', `#hx-route-${depth.toString(16)}`);
-				}
-				res.setHeader('HX-Reswap', "outerHTML");
-			}
+			return await this._resolve(fragments, ctx);
+		} catch (e) {
+			return this.unwrap(ctx, e);
+		}
+	}
 
-			const out = await args.Outlet();
+	private async _resolve(fragments: string[], ctx: GenericContext): Promise<Response | null> {
+		let res = await this.resolveIndex(fragments, ctx)
+			|| await this.resolveNext(fragments, ctx)
+			|| await this.resolveWild(fragments, ctx)
+			|| await this.resolveSlug(fragments, ctx);
 
-			if (args.title) {
-				const trigger = res.getHeader('HX-Trigger');
-				const entry   = `{"setTitle":"${encodeURIComponent(args.title)}"}`;
-				if (Array.isArray(trigger)) {
-					res.setHeader('HX-Trigger', [...trigger, entry]);
-				} else if (trigger) {
-					res.setHeader('HX-Trigger', [trigger.toString(), entry]);
-				} else {
-					res.setHeader('HX-Trigger', [entry]);
-				}
-			}
+		if (res instanceof Response) {
+			if (100 <= res.status && res.status <= 399) return res;
+			if (res.headers.has("X-Caught")) return res;
 
-			return out;
-		} catch (e: any) {
-			if (e instanceof Redirect) return e;
-			if (e instanceof Override) return e;
+			return this.unwrap(ctx, res);
+		}
 
-			console.error(e);
-			throw new Error(`Unhandled boil up type ${typeof(e)}: ${e}`);
-		};
+		return res;
+	}
+
+	private async resolveIndex(fragments: string[], ctx: GenericContext): Promise<Response | null> {
+		if (fragments.length > 0) return null;
+		if (!this.index) return null;
+
+		return await this.index.resolve(ctx);
+	}
+
+	private async resolveNext(fragments: string[], ctx: GenericContext): Promise<Response | null> {
+		if (fragments.length < 1) return null;
+
+
+		const next = this.nested.get(fragments[0]);
+		if (!next) return null;
+
+		return await next.resolve(fragments.slice(1), ctx);
+	}
+
+	private async resolveWild(fragments: string[], ctx: GenericContext): Promise<Response | null> {
+		if (!this.wild) return null;
+		if (fragments.length < 1) return null;
+
+		ctx.params[this.wildCard] = fragments[0];
+		return this.wild.resolve(fragments.slice(1), ctx);
+	}
+
+	private async resolveSlug(fragments: string[], ctx: GenericContext): Promise<Response | null> {
+		if (!this.slug) return null;
+
+		ctx.params["$"] = fragments.join("/");
+
+		const res = this.slug.resolve
+			? await this.slug.resolve(ctx)
+			: null;
+
+		return res;
+	}
+
+	private async unwrap(ctx: GenericContext, res: unknown): Promise<Response | null> {
+		if (!this.slug) throw res;
+
+		const caught = await this.slug.error(ctx, res);
+		caught.headers.set("X-Caught", "true");
+		return caught;
 	}
 }
 
-function BuildOutlet(start: RouteTree, args: RenderArgs, fromPath: string) {
-	const frags = args.url.pathname.split('/').slice(1);
-	if (frags.length === 1 && frags[0] === "") {
-		frags.splice(0, 1);
-	}
-	const from = fromPath.split('/').slice(1);
-	if (from.length === 1 && from[0] === "") {
-		from.splice(0, 1);
+class RouteLeaf {
+	private module: RouteModule<any>;
+
+	constructor(module: RouteModule<any>) {
+		this.module = module;
 	}
 
-	let matching = fromPath.length > 0;
-	let depth = -1;
+	async resolve(ctx: GenericContext) {
+		const res = await this.renderWrapper(ctx);
+		if (res === null) return null;
+		if (res instanceof Response) return res;
 
-	const stack: RouteTree[] = [start];
-	let mask: null | boolean[] = null;
+		return ctx.render(res);
+	}
 
-	while (stack.length > 0) {
-		const cursor = stack.pop() as RouteTree;
-		if (!mask) {
-			stack.push(cursor);
+	async error(ctx: GenericContext, e: unknown) {
+		if (!this.module.error) throw e;
 
-			if (frags.length === 0) {
-				if (matching && from.length !== 0) {
-					depth = args._outletChain.length + stack.length;
-					matching = false;
-				};
+		const res = await this.module.error(ctx, e);
+		if (res instanceof Response) return res;
 
-				if (cursor.default) {
-					args._addOutlet(cursor.default);
-					mask = cursor.default.mask;
-				} else {
-					args._addOutlet(blankLeaf);
-					mask = [];
-				}
-			} else {
-				if (matching && from.length === 0) {
-					depth = args._outletChain.length + stack.length;
-					matching = false;
-				}
+		return ctx.render(res);
+	}
 
-				const segment  = frags.splice(0, 1)[0];
-				const other    = from.splice(0, 1)[0];
-				const subRoute = cursor.nested.get(segment);
+	private async renderWrapper(ctx: GenericContext) {
+		try {
+			if (!this.module.loader && !this.module.action) return null;
 
-				if (subRoute) {
-					if (matching && segment !== other) {
-						depth = args._outletChain.length + stack.length;
-						matching = false;
-					};
+			const context = ctx.shape(this.module.parameters || {});
 
-					stack.push(subRoute);
-				} else if (cursor.wild) {
-					if (matching && cursor.nested.has(other)) {
-						depth = args._outletChain.length + stack.length;
-						matching = false;
-					};
-
-					args.params[cursor.wildCard] = segment;
-					stack.push(cursor.wild);
-				} else {
-					args._addOutlet(blankLeaf);
-					mask = [];
-				}
+			if (ctx.request.method === "HEAD" || ctx.request.method === "GET") {
+				if (this.module.loader) return await this.module.loader(context);
+				else return null;
 			}
 
-		} else {
-			if (cursor.route) {
-				args._addOutlet(cursor.route);
-			}
+			if (this.module.action) return await this.module.action(context);
+			throw new Response("Method not Allowed", { status: 405, statusText: "Method not Allowed", headers: ctx.headers });
+		} catch (e) {
+			return await this.error(ctx, e);
 		}
-	}
 
-	if (matching) {
-		depth = args._outletChain.length-1;
+		return null;
 	}
-
-	args._applyMask(mask as boolean[], depth);
-	return depth;
 }

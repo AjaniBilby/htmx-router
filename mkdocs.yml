@@ -1,0 +1,97 @@
+site_name: htmx-router
+site_url: https://htmx-router.ajanibilby.com/
+site_description: htmx-router docs
+repo_name: htmx-router
+repo_url: https://github.com/ajanibilby/htmx-router
+edit_uri: https://github.com/ajanibilby/htmx-router/tree/main/docs/source
+theme:
+  name: material
+  icon:
+    repo: fontawesome/brands/github
+    logo: material/script-text
+  features:
+    - content.code.annotate
+    - content.code.copy
+    - content.code.select
+    - navigation.footer
+    - navigation.indexes
+    - navigation.instant
+    - navigation.instant.progress
+    - navigation.path
+    - navigation.tabs
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - search.share
+    - search.suggest
+  palette:
+    # Palette toggle for automatic mode
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
+extra:
+  social:
+    - icon: fontawesome/brands/npm
+      link: https://www.npmjs.com/package/htmx-router
+    - icon: fontawesome/brands/github
+      link: https://github.com/ajanibilby/htmx-router
+plugins:
+  - search
+markdown_extensions:
+  - admonition
+  - attr_list
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+
+docs_dir: docs
+nav:
+  - Setup:
+    - setup/index.md
+    - Vite: setup/vite.md
+    - Server: setup/server.md
+    - Rendering: setup/rendering.md
+    - Client: setup/client.md
+    - Config: setup/config.md
+  - Router:
+    - router/index.md
+    - Parameters: router/parameters.md
+    - Nesting: router/nesting.md
+  - Islands:
+    - island/index.md
+    - Server: island/dynamic.md
+    - Client: island/client.md
+    - Preservation: island/preservation.md
+  - Components:
+    - components/index.md
+    - Defer: components/defer.md
+    - Head: components/head.md
+    - Scripts: components/scripts.md
+  - API:
+    - api/index.md
+    - Cookie: api/cookie.md
+    - CSS: api/css.md
+    - Defer: api/defer.md
+    - Endpoint: api/endpoint.md
+    - EventSource: api/event-source.md
+    - Response: api/response.md
+    - Shell: api/shell.md

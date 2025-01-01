@@ -1,0 +1,10 @@
+{
+	"router": {
+		"folder": "./app/routes",
+		"output": "./app/router.tsx"
+	},
+	"client": {
+		"adapter": "react",
+		"source": "./app/client.tsx"
+	}
+}

@@ -1,4 +1,4 @@
-import Client from "~/client";
+import Client from "~/manifest";
 import { shell } from "./$";
 
 export async function loader() {

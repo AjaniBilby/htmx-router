@@ -90,8 +90,8 @@ function BuildServerManifest(type: string, imported: Imports) {
 		out += `from "${imp.href}";\n`;
 	}
 
-	out += `\nimport { StyleClass } from "htmx-router/css";\n`
-		+ `const island = new StyleClass("i", ".this{display:contents;}\\n").name;\n\n`
+	out += `\nimport { Style } from "htmx-router/css";\n`
+		+ `const island = new Style("i", ".this{display:contents;}\\n").name;\n\n`
 		+ "type FirstArg<T> = T extends (arg: infer U, ...args: any[]) => any ? U : never;\n"
 		+ "function mount(name: string, data: string, ssr?: JSX.Element) {\n"
 		+ "\treturn (<>\n"

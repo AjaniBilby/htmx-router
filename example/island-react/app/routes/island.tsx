@@ -1,6 +1,6 @@
-import { GenericContext } from "htmx-router";
+import type { RouteContext } from "htmx-router/router";
 
-import { Dynamic } from "~/router";
+import { Dynamic } from "~/component/defer";
 import { shell } from "./$";
 
 export const parameters = {};
@@ -9,7 +9,7 @@ function timeout(ms: number) {
 	return new Promise((res) => setTimeout(res, ms));
 }
 
-async function thing(props: {}, ctx: GenericContext): Promise<JSX.Element> {
+async function thing(props: {}, ctx: RouteContext): Promise<JSX.Element> {
 	await timeout(2_000);
 	return <>
 		and filled later with dynamic content using skeletons for the pre-render

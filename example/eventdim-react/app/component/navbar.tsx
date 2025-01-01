@@ -1,14 +1,14 @@
-import { GenericContext, StyleClass } from "htmx-router"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCalendarDay } from "@fortawesome/free-solid-svg-icons";
+import { RouteContext } from "htmx-router/router";
+import { Style } from "htmx-router/css"
 
-import Client from "~/client";
+import Client from "~/manifest";
 import { GetUserID } from "~/model/user";
 import { CutString } from "~/util";
-import { Dynamic } from "~/router";
 import { prisma } from "~/db.server";
 
-const menu = new StyleClass("menu", `
+const menu = new Style("menu", `
 .this .icon {
 	animation: none;
 }
@@ -19,7 +19,7 @@ const menu = new StyleClass("menu", `
 }
 `).name;
 
-async function Account({ request, cookie, headers}: GenericContext): Promise<JSX.Element> {
+async function Account({ request, cookie, headers }: RouteContext): Promise<JSX.Element> {
 	headers.set('Cache-Control', "private, max-age=120");
 	const userID = await GetUserID(request, cookie);
 

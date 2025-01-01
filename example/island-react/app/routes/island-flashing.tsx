@@ -1,6 +1,6 @@
-import { GenericContext } from "htmx-router";
+import type { RouteContext } from "htmx-router/router";
 
-import { Dynamic } from "~/router";
+import { Dynamic } from "~/component/server/defer";
 import { shell } from "./$";
 
 export const parameters = {};
@@ -9,7 +9,7 @@ function timeout(ms: number) {
 	return new Promise((res) => setTimeout(res, ms));
 }
 
-export async function randomNumber(props: {}, ctx: GenericContext): Promise<JSX.Element> {
+export async function randomNumber(props: {}, ctx: RouteContext): Promise<JSX.Element> {
 	// You could also cache this in the browser cache
 	// ctx.headers.set('Cache-Control', "private, max-age=120");
 
@@ -25,7 +25,7 @@ export async function loader() {
 		As long as you keep your ids consistent, hx-preserve will preserve your islands
 
 		<blockquote id="retain" hx-preserve="true">
-			<Dynamic params={{}} loader={randomNumber}><div></div></Dynamic>
+			<Defer params={{}} loader={randomNumber}><div></div></Defer>
 		</blockquote>
 
 		<p>

@@ -44,7 +44,7 @@ app.listen(port, () => {
 });
 ```
 
-1.  Defined later in [rendering](./render.md)
+1.  Defined later in [rendering](./rendering.md)
 
 If you aren't using express, and say using something more like deno's native http server you would use `createRequestHandler.native` instead:
 ```js

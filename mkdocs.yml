@@ -78,7 +78,7 @@ nav:
     - Nesting: router/nesting.md
   - Islands:
     - island/index.md
-    - Server: island/dynamic.md
+    - Server: island/server.md
     - Client: island/client.md
     - Preservation: island/preservation.md
   - Components:

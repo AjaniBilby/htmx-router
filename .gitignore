@@ -3,6 +3,7 @@ bin/*
 
 *.tgz
 
+site/*
 
 package-lock.json
 *.d.ts

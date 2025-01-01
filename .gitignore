@@ -5,6 +5,5 @@ bin/*
 
 site/*
 
-package-lock.json
 *.d.ts
 *.js

@@ -37,33 +37,72 @@ function ClientMounter() {
 
 	const global = (window as any);
 
-	const mountRequests = new Array<[string, Element, string]>();
+	type MountRequest = [string, Element, string];
+	const mountRequests = new Array<MountRequest>();
 	function RequestMount(funcName: string, json: string) {
-		const elm = document.currentScript!.previousElementSibling!;
+		const elm = document.currentScript!.parentElement!;
 		if (elm.hasAttribute("mounted")) return;
+		if (!document.body.contains(elm)) return;
 
 		mountRequests.push([funcName, elm, json]);
 	}
 
-	function Mount() {
-		if (mountRequests.length < 1) return;
-		if (!global.CLIENT) throw new Error("Client manifest missing");
+	function Mount([ funcName, element, json ]: MountRequest) {
+		console.info("hydrating", funcName, "into", element);
+		const func = global.CLIENT[funcName];
+		if (!func) throw new Error(`Component ${funcName} is missing from client manifest`);
+		func(element, json);
+		element.setAttribute("mounted", "yes");
+	}
 
-		for (const [ funcName, element, json ] of mountRequests) {
-			console.info("hydrating", funcName, "into", element);
-			const func = global.CLIENT[funcName];
-			if (!func) throw new Error(`Component ${funcName} is missing from client manifest`);
-			func(element, json);
-			element.setAttribute("mounted", "yes");
+	function MountAll() {
+		if (!global.CLIENT) throw new Error("Client manifest missing");
+		if (mountRequests.length < 1) return;
+
+		for (const request of mountRequests) {
+			if (!document.body.contains(request[1])) continue;
+			Mount(request);
 		}
 		mountRequests.length = 0;
 	}
 
-	document.addEventListener("DOMContentLoaded", Mount);
-	document.addEventListener("htmx:load", Mount);
+	function MountStep() {
+		let request = mountRequests.shift();
+		while (request && !document.body.contains(request[1])) request = mountRequests.shift();
+		if (!request) {
+			console.warn("No more pending mount requests");
+			return;
+		}
+
+		Mount(request);
+	}
+
+	function Freeze() {
+		localStorage.setItem(freezeKey, "frozen");
+		window.location.reload();
+	}
+
+	function Unfreeze() {
+		localStorage.removeItem(freezeKey);
+		window.location.reload();
+	}
+
+	const freezeKey = "htmx-mount-freeze";
+	if (localStorage.getItem(freezeKey)) {
+		const ok = confirm("Client mounting is frozen, do you want to unfreeze");
+		if (ok) Unfreeze();
+	} else {
+		document.addEventListener("DOMContentLoaded", MountAll);
+		document.addEventListener("htmx:load", MountAll);
+	}
 
 	return {
-		mountAboveWith: RequestMount,
+		mountParentWith: RequestMount,
+		mount: {
+			freeze: Freeze,
+			unfreeze: Unfreeze,
+			step: MountStep
+		},
 		theme
 	}
 };

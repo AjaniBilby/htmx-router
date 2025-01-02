@@ -96,7 +96,8 @@ function BuildServerManifest(type: string, imported: Imports) {
 		+ "function mount(name: string, data: string, ssr?: JSX.Element) {\n"
 		+ "\treturn (<>\n"
 		+ `\t\t<div className={island}>{ssr}</div>\n`
-		+ `\t\t${SafeScript(type, "`Router.mountAboveWith('${name}', ${data})`")}\n`
+		+ `\t\t\t${SafeScript(type, "`Router.mountParentWith('${name}', ${data})`")}\n`
+		+ `\t\t</div>\n`
 		+ "\t</>);\n"
 		+ "}\n"
 		+ "\n"

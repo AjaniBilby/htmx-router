@@ -1,6 +1,7 @@
-import { GenericContext, text } from "htmx-router";
+import type { RouteContext } from "htmx-router/router";
+import { text } from "htmx-router/response";
 
-export function loader({ headers }: GenericContext) {
+export function loader({ headers }: RouteContext) {
 	headers.set("Cache-Control", "public, max-age=999999");
 	return text("", { headers });
 }

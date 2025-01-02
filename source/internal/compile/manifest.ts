@@ -93,20 +93,21 @@ function BuildServerManifest(type: string, imported: Imports) {
 	out += `\nimport { Style } from "htmx-router/css";\n`
 		+ `const island = new Style("i", ".this{display:contents;}\\n").name;\n\n`
 		+ "type FirstArg<T> = T extends (arg: infer U, ...args: any[]) => any ? U : never;\n"
-		+ "function mount(name: string, data: string, ssr?: JSX.Element) {\n"
-		+ "\treturn (<>\n"
-		+ `\t\t<div className={island}>{ssr}</div>\n`
-		+ `\t\t\t${SafeScript(type, "`Router.mountParentWith('${name}', ${data})`")}\n`
-		+ `\t\t</div>\n`
-		+ "\t</>);\n"
+		+ "function mount(name: string, json: string, ssr?: JSX.Element) {\n"
+		+ "\treturn (<div className={island}>\n"
+		+ `\t\t{ssr}\n`
+		+ `\t\t${SafeScript(type, "`Router.mountParentWith('${name}', ${json})`")}\n`
+		+ "\t</div>);\n"
 		+ "}\n"
-		+ "\n"
+		+ "function Stringify(data: any) {\n"
+		+ "\treturn JSON.stringify(data).replaceAll('<', '\\x3C');\n"
+		+ "}\n\n"
 		+ "const Client = {\n";
 
 	for (const name of names) {
 		out += `\t${name}: function(props: FirstArg<typeof ${name}> & { children?: JSX.Element }) {\n`
-			+ `\t\tconst { children, ...rest } = props;\n`
-			+ `\t\treturn mount("${name}", JSON.stringify(rest), children);\n`
+			+ `\t\tconst { children, ...data } = props;\n`
+			+ `\t\treturn mount("${name}", Stringify(data), children);\n`
 			+ `\t},\n`
 	}
 

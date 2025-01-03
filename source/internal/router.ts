@@ -12,7 +12,7 @@ export class GenericContext {
 	params: { [key: string]: string };
 	url: URL;
 
-	render: (res: JSX.Element) => Response;
+	render: (res: JSX.Element, headers: Headers) => Promise<Response> | Response;
 
 	constructor(request: GenericContext["request"], url: GenericContext["url"], renderer: GenericContext["render"]) {
 		this.cookie  = new Cookies(request.headers.get("cookie"));

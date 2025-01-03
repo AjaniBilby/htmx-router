@@ -33,11 +33,10 @@ const build = viteDevServer
 
 app.use('*', createRequestHandler.http({
 	build, viteDevServer,
-	render: (res) => {
-		const headers = new Headers();
+	render: (jsx, headers) => {
 		headers.set("Content-Type", "text/html; charset=UTF-8");
 
-		const stream = renderToString(res);
+		const stream = renderToString(jsx);
 		return new Response(stream, { headers });
 	}
 }));

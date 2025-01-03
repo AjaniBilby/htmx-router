@@ -36,12 +36,11 @@ const build = viteDevServer
 
 app.use('*', createRequestHandler.http({
 	build, viteDevServer,
-	render: (res) => {
-		const headers = new Headers();
+	render: async (jsx, headers) => {
 		headers.set("Content-Type", "text/html; charset=UTF-8");
 		headers.set("Cache-Control", "no-cache");
 
-		const stream = renderToString(res);
+		const stream = renderToString(jsx);
 		return new Response(stream, { headers });
 	}
 }));

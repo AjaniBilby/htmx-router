@@ -47,14 +47,14 @@ export class RouteContext<T extends ParameterShaper = {}> {
 	readonly params:  Parameterized<T>;
 	readonly url:     URL;
 
-	render: (res: JSX.Element) => Response;
+	render: GenericContext["render"];
 
 	constructor(base: GenericContext | RouteContext, params: ParameterPrelude<T>, shape: T) {
 		this.cookie  = base.cookie;
 		this.headers = base.headers;
 		this.request = base.request;
-		this.render = base.render;
-		this.url = base.url;
+		this.render  = base.render;
+		this.url     = base.url;
 
 
 		this.params = {} as Parameterized<T>;
@@ -219,7 +219,7 @@ class RouteLeaf {
 		if (res === null) return null;
 		if (res instanceof Response) return res;
 
-		return ctx.render(res);
+		return await ctx.render(res, ctx.headers);
 	}
 
 	async error(ctx: GenericContext, e: unknown) {
@@ -228,7 +228,7 @@ class RouteLeaf {
 		const res = await this.module.error(ctx, e);
 		if (res instanceof Response) return res;
 
-		return ctx.render(res);
+		return await ctx.render(res, ctx.headers);
 	}
 
 	private async renderWrapper(ctx: GenericContext) {

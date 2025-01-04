@@ -94,6 +94,6 @@ export async function loader(ctx: RouteContext<typeof parameters>) {
 	if (res === null) return null;
 
 	ctx.headers.set("X-Partial", "true");
-	return ctx.render(res);
+	return ctx.render(res, ctx.headers);
 }
 export const action = loader;

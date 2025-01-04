@@ -47,6 +47,6 @@ export async function loader(ctx: RouteContext<typeof parameters>) {
 	if (res === null) return null;
 	if (res instanceof Response) return res;
 
-	return ctx.render(res);
+	return ctx.render(res, ctx.headers);
 }
 export const action = loader;

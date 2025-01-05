@@ -70,7 +70,9 @@ export class Cookies {
 		this.config[name] = options;
 		this.map[name] = value;
 
-		if (typeof this.source === "object") document.cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}`;
+		if (this.source !== null && typeof this.source === "object") {
+			document.cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}`;
+		}
 	}
 
 	unset(name: string) {

@@ -209,6 +209,8 @@ function Cleanup() {
 }
 
 function CleanNode(node: Node) {
+	if (document.body.contains(node)) return; // it wasn't actually removed
+
 	if (node instanceof HTMLElement) {
 		const root = mounted.get(node);
 		if (root) {

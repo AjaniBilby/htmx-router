@@ -52,6 +52,7 @@ function ClientMounter() {
 		const func = global.CLIENT[funcName];
 		if (!func) throw new Error(`Component ${funcName} is missing from client manifest`);
 		func(element, json);
+		element.setAttribute("component", funcName);
 		element.setAttribute("mounted", "yes");
 	}
 

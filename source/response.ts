@@ -10,6 +10,18 @@ export function text(text: string, init?: ResponseInit) {
 	return res;
 }
 
+export function html(text: string, init?: ResponseInit) {
+	init ||= {};
+	init.statusText ||= "ok";
+	init.status ||= 200;
+
+	const res = new Response(text, init);
+	res.headers.set("Content-Type", "text/html; charset=UTF-8");
+	res.headers.set("X-Caught", "true");
+
+	return res;
+}
+
 export type TypedResponse<T> = Omit<Response, "json"> & { json(): Promise<T> };
 export type TypedJson<U extends TypedResponse<any>> = U extends TypedResponse<infer T> ? T : never;
 export function json<T>(data: T, init?: ResponseInit): TypedResponse<T> {

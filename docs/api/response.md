@@ -13,6 +13,17 @@ const r: Response = text(
 );
 ```
 
+## text
+
+For returning plain html as a response without it being caught by an `error` function
+```ts
+import { html } from "htmx-router/response";
+const r: Response = html( 
+  "<html>....</html>",
+  { statusText: "bad request", status: 400 }
+);
+```
+
 ## json
 
 For returning a json object as a response with type information

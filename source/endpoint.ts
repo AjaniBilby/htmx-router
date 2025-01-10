@@ -43,10 +43,6 @@ export async function loader(ctx: RouteContext<typeof parameters>) {
 	const endpoint = registry.get(ctx.params["$"]);
 	if (!endpoint) return null;
 
-	const res = await endpoint.render(ctx);
-	if (res === null) return null;
-	if (res instanceof Response) return res;
-
-	return ctx.render(res, ctx.headers);
+	return await endpoint.render(ctx);
 }
 export const action = loader;

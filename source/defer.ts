@@ -87,13 +87,8 @@ export async function loader(ctx: RouteContext<typeof parameters>) {
 		return null;
 	}
 
-	const forward = new RouteContext(ctx, prelude, entry.shape);
-	const res = await endpoint(forward);
-
-	if (res instanceof Response) return res;
-	if (res === null) return null;
-
 	ctx.headers.set("X-Partial", "true");
-	return ctx.render(res, ctx.headers);
+	const forward = new RouteContext(ctx, prelude, entry.shape);
+	return await endpoint(forward);
 }
 export const action = loader;

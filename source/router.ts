@@ -207,7 +207,7 @@ export class RouteTree {
 	private async unwrap(ctx: GenericContext, res: unknown): Promise<Response | null> {
 		if (!this.slug) throw res;
 
-		let caught = await this.slug.error(ctx, res);
+		const caught = await this.slug.error(ctx, res);
 
 		if (caught instanceof Response) {
 			caught.headers.set("X-Caught", "true");

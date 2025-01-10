@@ -5,6 +5,8 @@ import { ParameterPrelude, ParameterShaper } from '../util/parameters.js';
 import { RouteContext } from "../router.js";
 import { Cookies } from '../cookies.js';
 
+type Rendered = Response | BodyInit;
+
 export class GenericContext {
 	request: Request;
 	headers: Headers; // response headers
@@ -12,7 +14,7 @@ export class GenericContext {
 	params: { [key: string]: string };
 	url: URL;
 
-	render: (res: JSX.Element, headers: Headers) => Promise<Response> | Response;
+	render: (res: JSX.Element, headers: Headers) => Promise<Rendered> | Rendered;
 
 	constructor(request: GenericContext["request"], url: GenericContext["url"], renderer: GenericContext["render"]) {
 		this.cookie  = new Cookies(request.headers.get("cookie"));

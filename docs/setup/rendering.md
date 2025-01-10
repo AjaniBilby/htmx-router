@@ -8,7 +8,6 @@ import { renderToReadableStream } from 'react-dom/server';
 async function render(res: JSX.Element, headers: Headers) {
   headers.set("Content-Type", "text/html; charset=UTF-8");
 
-  const stream = await renderToReadableStream(res);
-  return new Response(stream, { headers });
+  return await renderToReadableStream(res);
 }
 ```

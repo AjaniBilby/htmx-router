@@ -152,6 +152,7 @@ export class RouteTree {
 			|| await this.resolveSlug(fragments, ctx);
 
 		if (res instanceof Response) {
+			if (res.ok) return res;
 			if (100 <= res.status && res.status <= 399) return res;
 			if (res.headers.has("X-Caught")) return res;
 
@@ -165,7 +166,10 @@ export class RouteTree {
 		if (fragments.length > 0) return null;
 		if (!this.index) return null;
 
-		return await this.index.resolve(ctx);
+		const res = await this.index.resolve(ctx);
+		if (res instanceof Response) return res;
+
+		return new Response(res, { headers: ctx.headers });
 	}
 
 	private async resolveNext(fragments: string[], ctx: GenericContext): Promise<Response | null> {
@@ -195,15 +199,27 @@ export class RouteTree {
 			? await this.slug.resolve(ctx)
 			: null;
 
-		return res;
+		if (res instanceof Response) return res;
+
+		return new Response(res, { headers: ctx.headers });
 	}
 
 	private async unwrap(ctx: GenericContext, res: unknown): Promise<Response | null> {
 		if (!this.slug) throw res;
 
-		const caught = await this.slug.error(ctx, res);
-		caught.headers.set("X-Caught", "true");
-		return caught;
+		let caught = await this.slug.error(ctx, res);
+
+		if (caught instanceof Response) {
+			caught.headers.set("X-Caught", "true");
+			return caught;
+		}
+
+		ctx.headers.set("X-Caught", "true");
+		return new Response(caught, res instanceof Response ? res : {
+			status: 500,
+			statusText: "Internal Server Error",
+			headers: ctx.headers
+		});
 	}
 }
 

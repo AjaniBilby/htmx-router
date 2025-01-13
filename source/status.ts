@@ -22,12 +22,14 @@ const definitions = {
 	304: "Not Modified" as const,
 	305: "Use Proxy" as const,
 	306: "Switch Proxy" as const,
+	307: "Temporary Redirect" as const,
 	308: "Permanent Redirect" as const,
 
 	400: "Bad Request" as const,
 	401: "Unauthorized" as const,
 	402: "Payment Required" as const,
 	403: "Forbidden" as const,
+	404: "Not Found" as const,
 	405: "Method Not Allowed" as const,
 	406: "Not Acceptable" as const,
 	407: "Proxy Authentication Required" as const,
@@ -79,7 +81,7 @@ for (const key in definitions) {
 }
 
 export type StatusText = typeof definitions[keyof typeof definitions];
-export function MakeStatus(lookup: number | StatusText | string) {
+export function MakeStatus(lookup: number | StatusText) {
 	if (typeof lookup === "number") return lookupCode(lookup);
 	return lookupStatus(lookup);
 }
@@ -90,7 +92,7 @@ function lookupCode(status: number) {
 
 	return { status, statusText: lookup[status] as StatusText }
 }
-function lookupStatus(statusText: StatusText | string) {
+function lookupStatus(statusText: StatusText) {
 	const status = index.get(statusText.toLowerCase());
 	if (!status) throw new TypeError(`statusText ${statusText} is not of type StatusText`);
 

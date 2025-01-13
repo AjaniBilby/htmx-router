@@ -168,6 +168,7 @@ export class RouteTree {
 
 		const res = await this.index.resolve(ctx);
 		if (res instanceof Response) return res;
+		if (res === null) return null;
 
 		return new Response(res, { headers: ctx.headers });
 	}
@@ -195,11 +196,9 @@ export class RouteTree {
 
 		ctx.params["$"] = fragments.join("/");
 
-		const res = this.slug.resolve
-			? await this.slug.resolve(ctx)
-			: null;
-
+		const res = await this.slug.resolve(ctx);
 		if (res instanceof Response) return res;
+		if (res === null) return null;
 
 		return new Response(res, { headers: ctx.headers });
 	}
@@ -231,7 +230,7 @@ class RouteLeaf {
 	}
 
 	async resolve(ctx: GenericContext) {
-		const res = await this.renderWrapper(ctx);
+		const res = await this.response(ctx);
 		if (res === null) return null;
 		if (res instanceof Response) return res;
 
@@ -247,7 +246,7 @@ class RouteLeaf {
 		return await ctx.render(res, ctx.headers);
 	}
 
-	private async renderWrapper(ctx: GenericContext) {
+	private async response(ctx: GenericContext) {
 		try {
 			if (!this.module.loader && !this.module.action) return null;
 

@@ -5,7 +5,7 @@ import { Deferral } from "htmx-router/defer";
 export function Defer<T extends ParameterShaper>(props: {
 	params?: Parameterized<T>,
 	loader:  RenderFunction<T>,
-	children?: JSX.Element
+	children?: JSX.Element[] | JSX.Element
 }): JSX.Element {
 	return <div
 		hx-get={Deferral(props.loader, props.params)}

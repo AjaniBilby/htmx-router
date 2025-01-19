@@ -4,7 +4,7 @@ ServerOnlyWarning("http-request");
 import type { IncomingMessage, ServerResponse } from "http";
 import type { ViteDevServer } from "vite";
 
-import type { GenericContext } from "../router.js";
+import { GenericContext } from "../router.js";
 import type { RouteTree } from "../../router.js";
 import { Resolve } from "./native.js";
 
@@ -20,8 +20,8 @@ export function createRequestHandler(config: Config) {
 	return async (req: IncomingMessage, res: ServerResponse) => {
 		try {
 			const mod: RouterModule = typeof config.build === "function" ? await config.build() : await config.build;
-
 			const request = NativeRequest(req);
+
 			let { response, headers } = await Resolve(request, mod.tree, config);
 			res.writeHead(response.status, headers);
 

@@ -135,9 +135,8 @@ export async function loader(ctx: RouteContext<typeof parameters>) {
 	// const build = GetSheet();
 	if (!ctx.params.hash.startsWith(hash)) return null;
 
-	const headers = new Headers();
-	headers.set("Content-Type", "text/javascript");
-	headers.set("Cache-Control", "public, max-age=604800");
+	ctx.headers.set("Content-Type", "text/javascript");
+	ctx.headers.set("Cache-Control", "public, max-age=604800");
 
-	return new Response(script, { headers });
+	return new Response(script, { headers: ctx.headers });
 }

@@ -81,20 +81,33 @@ for (const key in definitions) {
 }
 
 export type StatusText = typeof definitions[keyof typeof definitions];
-export function MakeStatus(lookup: number | StatusText) {
-	if (typeof lookup === "number") return lookupCode(lookup);
-	return lookupStatus(lookup);
+export function MakeStatus(lookup: number | StatusText, init?: ResponseInit | Headers): ResponseInit {
+	if (init instanceof Headers) init = { headers: init };
+
+	if (typeof lookup === "number") return lookupCode(lookup, init);
+	return lookupStatus(lookup, init);
 }
 
-function lookupCode(status: number) {
+function lookupCode(status: number, init?: ResponseInit): ResponseInit {
 	if (status < 100) throw new TypeError(`Status ${status}<100`);
 	if (status > 599) throw new TypeError(`Status ${status}>599`);
 
-	return { status, statusText: lookup[status] as StatusText }
+	const statusText = lookup[status] as StatusText;
+	return Status(status, statusText, init);
 }
-function lookupStatus(statusText: StatusText) {
+function lookupStatus(statusText: StatusText, init?: ResponseInit): ResponseInit {
 	const status = index.get(statusText.toLowerCase());
 	if (!status) throw new TypeError(`statusText ${statusText} is not of type StatusText`);
+
+	return Status(status, statusText, init);
+}
+
+function Status(status: number, statusText: string, init?: ResponseInit) {
+	if (init) {
+		init.statusText = statusText;
+		init.status = status;
+		return init;
+	}
 
 	return { status, statusText };
 }

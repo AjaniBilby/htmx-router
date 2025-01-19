@@ -4,42 +4,40 @@ ServerOnlyWarning("native-request");
 import type { Config, RouterModule } from './index.js';
 import type { RouteTree } from '../../router.js';
 import { GenericContext } from "../router.js";
+import { MakeStatus } from "../../status.js";
 
 export function createRequestHandler(config: Config) {
 	return async (req: Request) => {
-		try {
-			const mod: RouterModule = typeof config.build === "function" ? await config.build() : await config.build;
-
-			let { response } = await Resolve(req, mod.tree, config);
-			return response;
-		} catch (e) {
-			if (e instanceof Error) {
-				console.error(e.stack);
-				config.viteDevServer?.ssrFixStacktrace(e);
-				return new Response(e.message + "\n" + e.stack, { status: 500, statusText: "Internal Server Error" });
-			} else {
-				console.error(e);
-				return new Response(String(e), { status: 500, statusText: "Internal Server Error" });
-			}
-		}
+		const mod: RouterModule = typeof config.build === "function" ? await config.build() : await config.build;
+		return await Resolve(req, mod.tree, config);
 	}
 }
 
 export async function Resolve(request: Request, tree: RouteTree, config: Config) {
-	const url = new URL(request.url);
-	const ctx = new GenericContext(request, url, config.render);
+	const ctx = new GenericContext(request, new URL(request.url), config.render);
 
-	const x = ctx.url.pathname.endsWith("/") ? ctx.url.pathname.slice(0, -1) : ctx.url.pathname;
-	const fragments = x.split("/").slice(1);
+	let response: Response;
+	try {
+		const x = ctx.url.pathname.endsWith("/") ? ctx.url.pathname.slice(0, -1) : ctx.url.pathname;
+		const fragments = x.split("/").slice(1);
 
-	let response = await tree.resolve(fragments, ctx);
-	if (response === null) response = new Response("No Route Found", { status: 404, statusText: "Not Found", headers: ctx.headers });
+		const res = await tree.resolve(fragments, ctx);
+		response = res === null
+			? new Response("No Route Found", MakeStatus("Not Found", ctx.headers))
+			: res;
 
-	// Override with context headers
-	if (response.headers !== ctx.headers) {
-		for (const [key, value] of ctx.headers) {
-			if (response.headers.has(key)) continue;
-			response.headers.set(key, value);
+		// Override with context headers
+		if (response.headers !== ctx.headers) {
+			for (const [key, value] of ctx.headers) response.headers.set(key, value);
+		}
+	} catch (e) {
+		if (e instanceof Error) {
+			console.error(e.stack);
+			config.viteDevServer?.ssrFixStacktrace(e);
+			response = new Response(e.message + "\n" + e.stack, { status: 500, statusText: "Internal Server Error" });
+		} else {
+			console.error(e);
+			response = new Response(String(e), { status: 500, statusText: "Internal Server Error" });
 		}
 	}
 

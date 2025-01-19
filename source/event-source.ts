@@ -3,6 +3,19 @@ ServerOnlyWarning("event-source");
 
 type Controller = ReadableStreamDefaultController;
 
+
+// global for easy reuse
+const encoder = new TextEncoder();
+const headers = new Headers();
+// Chunked encoding with immediate forwarding by proxies (i.e. nginx)
+headers.set("X-Accel-Buffering", "no");
+headers.set("Transfer-Encoding", "chunked");
+headers.set("Content-Type", "text/event-stream");
+// the maximum keep alive chrome shouldn't ignore
+headers.set("Keep-Alive", "timeout=120");
+headers.set("Connection", "keep-alive");
+
+
 /**
  * Helper for Server-Sent-Events, with auto close on SIGTERM and SIGHUP messages
  * Includes a keep alive empty packet sent every 30sec (because Chrome implodes at 120sec, and can be unreliable at 60sec)
@@ -108,22 +121,6 @@ export class EventSourceSet extends Set<EventSource> {
 		this.clear();
 	}
 }
-
-
-
-
-
-// global for easy reuse
-const encoder = new TextEncoder();
-const headers = new Headers();
-
-// Chunked encoding with immediate forwarding by proxies (i.e. nginx)
-headers.set("X-Accel-Buffering", "no");
-headers.set("Transfer-Encoding", "chunked");
-headers.set("Content-Type", "text/event-stream");
-
-headers.set("Keep-Alive", "timeout=120"); // the maximum keep alive chrome shouldn't ignore
-headers.set("Connection", "keep-alive");
 
 
 

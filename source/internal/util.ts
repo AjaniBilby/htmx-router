@@ -53,3 +53,8 @@ export function ServerOnlyWarning(context: string) {
 
 	console.log(typeof document, typeof process);
 }
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function AssertUnreachable(x: never): never {
+	throw new Error("Unreachable code path reachable");
+}

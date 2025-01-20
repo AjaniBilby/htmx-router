@@ -1,9 +1,10 @@
-import { ServerOnlyWarning } from "./internal/util.js";
+import { AssertUnreachable, ServerOnlyWarning } from "./internal/util.js";
 ServerOnlyWarning("router");
 
 import type { GenericContext } from "./internal/router.js";
 import { Parameterized, ParameterPrelude, ParameterShaper } from './util/parameters.js';
 import { RouteModule } from "./index.js";
+import { MakeStatus } from "./status.js";
 import { Cookies } from './cookies.js';
 
 // builtin routes
@@ -11,6 +12,7 @@ import * as endpoint from './endpoint.js';
 import * as dynamic from './defer.js';
 import * as mount from './internal/mount.js';
 import * as css from './css.js';
+import { html } from "./response.js";
 
 export function GenerateRouteTree(props: {
 	modules: Record<string, unknown>,
@@ -170,7 +172,7 @@ export class RouteTree {
 		if (res instanceof Response) return res;
 		if (res === null) return null;
 
-		return new Response(res, { headers: ctx.headers });
+		AssertUnreachable(res);
 	}
 
 	private async resolveNext(fragments: string[], ctx: GenericContext): Promise<Response | null> {
@@ -200,25 +202,12 @@ export class RouteTree {
 		if (res instanceof Response) return res;
 		if (res === null) return null;
 
-		return new Response(res, { headers: ctx.headers });
+		AssertUnreachable(res);
 	}
 
-	private async unwrap(ctx: GenericContext, res: unknown): Promise<Response | null> {
+	private unwrap(ctx: GenericContext, res: unknown) {
 		if (!this.slug) throw res;
-
-		const caught = await this.slug.error(ctx, res);
-
-		if (caught instanceof Response) {
-			caught.headers.set("X-Caught", "true");
-			return caught;
-		}
-
-		ctx.headers.set("X-Caught", "true");
-		return new Response(caught, res instanceof Response ? res : {
-			status: 500,
-			statusText: "Internal Server Error",
-			headers: ctx.headers
-		});
+		return this.slug.error(ctx, res);
 	}
 }
 
@@ -230,20 +219,31 @@ class RouteLeaf {
 	}
 
 	async resolve(ctx: GenericContext) {
-		const res = await this.response(ctx);
-		if (res === null) return null;
+		const jsx = await this.response(ctx);
+		if (jsx === null) return null;
+		if (jsx instanceof Response) return jsx;
+
+		const res = await ctx.render(jsx, ctx.headers);
 		if (res instanceof Response) return res;
 
-		return await ctx.render(res, ctx.headers);
+		return html(res, { headers: ctx.headers });
 	}
 
 	async error(ctx: GenericContext, e: unknown) {
 		if (!this.module.error) throw e;
 
-		const res = await this.module.error(ctx, e);
-		if (res instanceof Response) return res;
+		let jsx = await this.module.error(ctx, e);
 
-		return await ctx.render(res, ctx.headers);
+		const caught = jsx instanceof Response ? jsx
+			: await ctx.render(jsx, ctx.headers);
+
+		if (caught instanceof Response) {
+			caught.headers.set("X-Caught", "true");
+			return caught;
+		}
+
+		ctx.headers.set("X-Caught", "true");
+		return html(caught, e instanceof Response ? e : MakeStatus("Internal Server Error", ctx.headers));
 	}
 
 	private async response(ctx: GenericContext) {
@@ -258,7 +258,7 @@ class RouteLeaf {
 			}
 
 			if (this.module.action) return await this.module.action(context);
-			throw new Response("Method not Allowed", { status: 405, statusText: "Method not Allowed", headers: ctx.headers });
+			throw new Response("Method not Allowed", MakeStatus("Method Not Allowed", ctx.headers));
 		} catch (e) {
 			return await this.error(ctx, e);
 		}

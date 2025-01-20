@@ -1,4 +1,4 @@
-export function text(text: string, init?: ResponseInit) {
+export function text(text: BodyInit, init?: ResponseInit) {
 	init ||= {};
 	init.statusText ||= "ok";
 	init.status ||= 200;
@@ -10,7 +10,7 @@ export function text(text: string, init?: ResponseInit) {
 	return res;
 }
 
-export function html(text: string, init?: ResponseInit) {
+export function html(text: BodyInit, init?: ResponseInit) {
 	init ||= {};
 	init.statusText ||= "ok";
 	init.status ||= 200;

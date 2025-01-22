@@ -23,18 +23,22 @@ export function GenerateRouteTree(props: {
 	const tree = new RouteTree();
 	for (const path in props.modules) {
 		const mod  = props. modules[path] as RouteModule<any>;
-		const tail = path.lastIndexOf(".");
-		const url  = path.slice(props.scope.length, tail);
-		tree.ingest(url, mod);
+
+		let tail = path.lastIndexOf(".");
+		if (path.endsWith("/_index", tail)) tail -= "/_index".length;
+
+		const url = path.slice(props.scope.length-1, tail);
+		const leaf = new RouteLeaf(mod, url);
+		tree.ingest(leaf);
 
 		if (mod.route) mod.route(url as any);
 	}
 
 	// ingest router builtins
-	tree.ingest(endpoint.path, endpoint);
-	tree.ingest(dynamic.path, dynamic);
-	tree.ingest(mount.path, mount);
-	tree.ingest(css.path, css);
+	tree.ingest(new RouteLeaf(endpoint, endpoint.path));
+	tree.ingest(new RouteLeaf(dynamic,  dynamic.path));
+	tree.ingest(new RouteLeaf(mount,    mount.path));
+	tree.ingest(new RouteLeaf(css,      css.path));
 
 	return tree;
 }
@@ -43,6 +47,7 @@ export function GenerateRouteTree(props: {
 
 
 export class RouteContext<T extends ParameterShaper = {}> {
+	readonly path:    string;
 	readonly request: Request;
 	readonly headers: Headers; // response headers
 	readonly cookie:  Cookies;
@@ -51,7 +56,8 @@ export class RouteContext<T extends ParameterShaper = {}> {
 
 	render: GenericContext["render"];
 
-	constructor(base: GenericContext | RouteContext, params: ParameterPrelude<T>, shape: T) {
+	constructor(base: GenericContext | RouteContext, params: ParameterPrelude<T>, shape: T, path: string) {
+		this.path    = path;
 		this.cookie  = base.cookie;
 		this.headers = base.headers;
 		this.request = base.request;
@@ -98,17 +104,16 @@ export class RouteTree {
 		this.slug = null;
 	}
 
-	ingest(path: string | string[], module: RouteModule<any>) {
-		if (!Array.isArray(path)) path = path.split("/");
+	ingest(node: RouteLeaf, path?: string[]) {
+		if (!path) path = node.path.length === 0 ? [] : node.path.slice(1).split("/");
 
-
-		if (path.length === 0 || (path.length == 1 && path[0] === "_index")) {
-			this.index = new RouteLeaf(module);
+		if (path.length === 0) {
+			this.index = node;
 			return;
 		}
 
 		if (path[0] === "$") {
-			this.slug = new RouteLeaf(module);
+			this.slug = node;
 			return;
 		}
 
@@ -122,8 +127,7 @@ export class RouteTree {
 				throw new Error(`Redefinition of wild card ${this.wildCard} to ${wildCard}`);
 			}
 
-			path.splice(0, 1);
-			this.wild.ingest(path, module);
+			this.wild.ingest(node, path.slice(1));
 			return;
 		}
 
@@ -133,8 +137,7 @@ export class RouteTree {
 			this.nested.set(path[0], next);
 		}
 
-		path.splice(0, 1);
-		next.ingest(path, module);
+		next.ingest(node, path.slice(1));
 	}
 
 	async resolve(fragments: string[], ctx: GenericContext): Promise<Response | null> {
@@ -213,9 +216,11 @@ export class RouteTree {
 
 class RouteLeaf {
 	private module: RouteModule<any>;
+	readonly path: string;
 
-	constructor(module: RouteModule<any>) {
+	constructor(module: RouteModule<any>, path: string) {
 		this.module = module;
+		this.path = path;
 	}
 
 	async resolve(ctx: GenericContext) {
@@ -232,7 +237,7 @@ class RouteLeaf {
 	async error(ctx: GenericContext, e: unknown) {
 		if (!this.module.error) throw e;
 
-		let jsx = await this.module.error(ctx, e);
+		let jsx = await this.module.error(ctx.shape({}, this.path), e);
 
 		const caught = jsx instanceof Response ? jsx
 			: await ctx.render(jsx, ctx.headers);
@@ -250,7 +255,7 @@ class RouteLeaf {
 		try {
 			if (!this.module.loader && !this.module.action) return null;
 
-			const context = ctx.shape(this.module.parameters || {});
+			const context = ctx.shape(this.module.parameters || {}, this.path);
 
 			if (ctx.request.method === "HEAD" || ctx.request.method === "GET") {
 				if (this.module.loader) return await this.module.loader(context);

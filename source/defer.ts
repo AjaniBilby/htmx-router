@@ -68,7 +68,7 @@ export function Deferral<T extends ParameterShaper>(func: RenderFunction<T>, par
 /**
  * RouteTree mounting point
  */
-export const path = "_/defer/$";
+export const path = "/_/defer/$";
 
 export const parameters = {
 	"$": String
@@ -88,7 +88,7 @@ export async function loader(ctx: RouteContext<typeof parameters>) {
 	}
 
 	ctx.headers.set("X-Partial", "true");
-	const forward = new RouteContext(ctx, prelude, entry.shape);
+	const forward = new RouteContext(ctx, prelude, entry.shape, "");
 	return await endpoint(forward);
 }
 export const action = loader;

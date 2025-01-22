@@ -123,7 +123,7 @@ export function GetMountUrl() {
 /**
  * RouteTree mounting point
  */
-export const path = "_/mount/$hash";
+export const path = "/_/mount/$hash";
 
 export const parameters = {
 	hash: String

@@ -28,7 +28,7 @@ export class GenericContext {
 		this.headers.set("content-type", "text/html");
 	}
 
-	shape<T extends ParameterShaper>(shape: T) {
-		return new RouteContext(this, this.params as ParameterPrelude<T>, shape);
+	shape<T extends ParameterShaper>(shape: T, path: string) {
+		return new RouteContext(this, this.params as ParameterPrelude<T>, shape, path);
 	}
 }

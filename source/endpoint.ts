@@ -33,7 +33,7 @@ export class Endpoint {
 /**
  * RouteTree mounting point
  */
-export const path = "_/endpoint/$";
+export const path = "/_/endpoint/$";
 
 export const parameters = {
 	"$": String

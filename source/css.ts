@@ -61,7 +61,7 @@ export function GetSheetUrl() {
 /**
  * RouteTree mounting point
  */
-export const path = "_/style/$hash";
+export const path = "/_/style/$hash";
 
 export const parameters = {
 	hash: String

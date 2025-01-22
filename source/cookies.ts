@@ -71,8 +71,12 @@ export class Cookies {
 		this.map[name] = value;
 
 		if (this.source !== null && typeof this.source === "object") {
-			document.cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}`;
+			document.cookie = this.string(name);
 		}
+	}
+
+	private string(name: string) {
+		return encodeURIComponent(name)+"="+encodeURIComponent(this.map[name])+";"+StringifyOptions(this.config[name]);;
 	}
 
 	unset(name: string) {
@@ -83,29 +87,30 @@ export class Cookies {
 	/** Creates the response headers required to make the changes done to these cookies */
 	export() {
 		const headers = new Array<string>();
-		for (const name in this.config) {
-			let config = "";
-			for (const opt in this.config[name]) {
-				const prop = opt === "maxAge"
-					? "Max-Age"
-					: opt[0].toUpperCase() + opt.slice(1);
-
-				const raw = this.config[name][opt as keyof CookieOptions];
-				if (raw === true) {
-					config += `; ${prop}`;
-					continue;
-				}
-				if (raw === false) continue;
-
-				let value = String(raw);
-				value = value[0].toUpperCase() + value.slice(1);
-
-				config += `; ${prop}=${value}`;
-			}
-
-			const cookie = encodeURIComponent(name)+"="+encodeURIComponent(this.map[name])+config+";";
-			headers.push(cookie);
-		}
+		for (const name in this.config) headers.push(this.string(name));
 		return headers;
 	}
+}
+
+function StringifyOptions(options: CookieOptions) {
+	let config = "";
+	for (const opt in options) {
+		const prop = opt === "maxAge"
+			? "Max-Age"
+			: opt[0].toUpperCase() + opt.slice(1);
+
+		const raw = options[opt as keyof CookieOptions];
+		if (raw === true) {
+			config += `; ${prop}`;
+			continue;
+		}
+		if (raw === false) continue;
+
+		let value = String(raw);
+		value = value[0].toUpperCase() + value.slice(1);
+
+		config += `${prop}=${value};`;
+	}
+
+	return config;
 }

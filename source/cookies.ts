@@ -76,7 +76,7 @@ export class Cookies {
 	}
 
 	private string(name: string) {
-		return encodeURIComponent(name)+"="+encodeURIComponent(this.map[name])+";"+StringifyOptions(this.config[name]);;
+		return encodeURIComponent(name)+"="+encodeURIComponent(this.map[name])+StringifyOptions(this.config[name]);;
 	}
 
 	unset(name: string) {
@@ -109,7 +109,7 @@ function StringifyOptions(options: CookieOptions) {
 		let value = String(raw);
 		value = value[0].toUpperCase() + value.slice(1);
 
-		config += `${prop}=${value};`;
+		config += `; ${prop}=${value}`;
 	}
 
 	return config;

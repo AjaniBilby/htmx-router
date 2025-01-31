@@ -265,6 +265,7 @@ class RouteLeaf {
 			if (this.module.action) return await this.module.action(context);
 			throw new Response("Method not Allowed", MakeStatus("Method Not Allowed", ctx.headers));
 		} catch (e) {
+			if (e instanceof Response && e.headers.has("X-Caught")) return e;
 			return await this.error(ctx, e);
 		}
 

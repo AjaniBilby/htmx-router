@@ -18,13 +18,19 @@ export async function Resolve(request: Request, tree: RouteTree, config: Config)
 
 	let response: Response;
 	try {
-		const x = ctx.url.pathname.endsWith("/") ? ctx.url.pathname.slice(0, -1) : ctx.url.pathname;
-		const fragments = x.split("/").slice(1);
+		if (ctx.url.pathname.endsWith("/")) {
+			ctx.headers.set("location", ctx.url.pathname + ctx.url.search + ctx.url.hash);
+			response = new Response("", MakeStatus("Permanent Redirect", { headers: ctx.headers }))
+		} else {
+			const x = ctx.url.pathname;
+			const fragments = x.split("/").slice(1);
 
-		const res = await tree.resolve(fragments, ctx);
-		response = res === null
-			? new Response("No Route Found", MakeStatus("Not Found", ctx.headers))
-			: res;
+			const res = await tree.resolve(fragments, ctx);
+			response = res === null
+				? new Response("No Route Found", MakeStatus("Not Found", ctx.headers))
+				: res;
+		}
+
 
 		// Override with context headers
 		if (response.headers !== ctx.headers) {

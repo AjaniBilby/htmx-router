@@ -15,7 +15,7 @@ function htmx() {
 
 
 const driver = (typeof document === "object" ? document.createElement("a") : null)!;
-export async function navigate(href: string, pushHistory = true) {
+export function htmxNavigate(href: string = "", pushHistory = true) {
 	if (typeof window !== "object") return;
 	if (!driver) return;
 
@@ -41,8 +41,16 @@ export async function navigate(href: string, pushHistory = true) {
 	driver.click();
 }
 
+/**
+ * @deprecated - use htmxNavigate() instead
+ */
+export const navigate = htmxNavigate()
+
+/**
+ * @deprecated - use navigate() instead
+ */
 export function revalidate() {
-	return navigate("", false);
+	return htmxNavigate("", false);
 }
 
 export async function htmxAppend(href: string, verb = "GET") {

@@ -28,8 +28,8 @@
 	},
 	"homepage": "https://htmx-router.ajanibilby.com/",
 	"dependencies": {
-		"es-module-lexer": "^1.5.4",
-		"vite": "^6.2.3"
+		"es-module-lexer": "^1.7.0",
+		"vite": "^6.3.5"
 	},
 	"devDependencies": {
 		"@types/node": "^20.4.5",

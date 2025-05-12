@@ -69,30 +69,30 @@ const dictionary = {
 }
 
 type Definitions = typeof dictionary;
-export type Status      = keyof Definitions;
-export type StatusText  = Definitions[Status];
+export type StatusCode = keyof Definitions;
+export type StatusText = Definitions[StatusCode];
 
 const index = {
-	code: new Map<string, Status>(),
-	text: new Map<Status, StatusText>()
+	code: new Map<string, StatusCode>(),
+	text: new Map<StatusCode, StatusText>()
 };
 
 for (const k in dictionary) {
-	const code = Number(k) as Status;
+	const code = Number(k) as StatusCode;
 	const text = dictionary[code];
 	index.code.set(text.toLowerCase(), code);
 	index.text.set(code, text);
 }
 
 
-export function MakeStatus(lookup: Status | StatusText, init?: ResponseInit | Headers): ResponseInit {
+export function MakeStatus(lookup: StatusCode | StatusText, init?: ResponseInit | Headers): ResponseInit {
 	if (init instanceof Headers) init = { headers: init };
 
 	if (typeof lookup === "number") return lookupCode(lookup, init);
 	return lookupStatus(lookup, init);
 }
 
-function lookupCode(code: Status, init?: ResponseInit): ResponseInit {
+function lookupCode(code: StatusCode, init?: ResponseInit): ResponseInit {
 	const text = index.text.get(code);
 	if (text === undefined) throw new TypeError(`Status ${code} is not a known status code`);
 	return SetStatus(init, code, text);
@@ -108,3 +108,9 @@ function SetStatus(into: ResponseInit = {}, status: number, statusText: string) 
 	into.status = status;
 	return into;
 }
+
+
+/**
+ * @deprecated
+ */
+export type Status = StatusCode;

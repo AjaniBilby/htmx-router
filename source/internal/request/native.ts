@@ -18,12 +18,12 @@ export async function Resolve(request: Request, tree: RouteTree, config: Config)
 
 	let response: Response;
 	try {
-		if (ctx.url.pathname.endsWith("/")) {
+		const x = ctx.url.pathname.slice(1);
+		if (x.endsWith("/")) {
 			ctx.headers.set("location", ctx.url.pathname.slice(0, -1) + ctx.url.search + ctx.url.hash);
 			response = new Response("", MakeStatus("Permanent Redirect", { headers: ctx.headers }))
 		} else {
-			const x = ctx.url.pathname;
-			const fragments = x.split("/").slice(1);
+			const fragments = x === "" ? [] : x.split("/");
 
 			const res = await tree.resolve(fragments, ctx);
 			response = res === null

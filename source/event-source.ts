@@ -4,14 +4,15 @@ ServerOnlyWarning("event-source");
 
 // global for easy reuse
 const encoder = new TextEncoder();
-const headers = new Headers();
-// Chunked encoding with immediate forwarding by proxies (i.e. nginx)
-headers.set("X-Accel-Buffering", "no");
-headers.set("Transfer-Encoding", "chunked");
-headers.set("Content-Type", "text/event-stream");
-// the maximum keep alive chrome shouldn't ignore
-headers.set("Keep-Alive", "timeout=60");
-headers.set("Connection", "keep-alive");
+const headers: ResponseInit["headers"] = {
+	// Chunked encoding with immediate forwarding by proxies (i.e. nginx)
+	"X-Accel-Buffering": "no",
+	"Transfer-Encoding": "chunked",
+	"Content-Type": "text/event-stream",
+	// the maximum keep alive chrome shouldn't ignore
+	"Keep-Alive": "timeout=60",
+	"Connection": "keep-alive",
+}
 
 
 /**
@@ -25,39 +26,46 @@ export class EventSource {
 
 	readonly response: Response;
 
-	readonly createdAt: number; // when was this source created
+	// activity timestamps, in unix time for minimal storage
+	// since most use cases won't need the Date object anyway
+	// no point waiting space and cycles creating it
+	readonly createdAt: number;
+	get updatedAt () { return this.#updatedAt; }
 	#updatedAt: number;
+
 
 	// just to make it polyfill
 	readonly withCredentials: boolean;
 	readonly url: string;
 
+	get readyState() { return this.#state; }
+
+	static CONNECTING = 0;
+	static OPEN       = 1;
+	static CLOSED     = 2;
+
+
+
 	constructor(request: Request, keepAlive = 30_000) {
 		this.#controller = null;
 		this.#state = EventSource.CONNECTING;
-		this.url = request.url;
 		this.withCredentials = request.mode === "cors";
+		this.url = request.url;
 
 		this.createdAt = Date.now();
 		this.#updatedAt = 0;
 
-		const stream = new ReadableStream({
-			start: (c) => { this.#controller = c; this.#state = 1; },
-			cancel: () => { this.close(); }
-		});
-		request.signal.addEventListener('abort', () => { this.close() });
+		// immediate prepare for abortion
+		const cancel = () => { this.close(); };
+		request.signal.addEventListener('abort', cancel);
+
+		const start  = (c: ReadableStreamDefaultController<Uint8Array>) => { this.#controller = c; this.#state = EventSource.OPEN; };
+		const stream = new ReadableStream<Uint8Array>({ start, cancel }, { highWaterMark: 0 });
 
 		this.response = new Response(stream, { headers });
 
 		this.#timer = setInterval(() => this.keepAlive(), keepAlive);
 		register.add(this);
-	}
-
-	get readyState() {
-		return this.#state;
-	}
-	get updatedAt () {
-		return this.#updatedAt;
 	}
 
 	private sendBytes(chunk: Uint8Array, active: boolean) {
@@ -83,37 +91,31 @@ export class EventSource {
 	}
 
 	dispatch(type: string, data: string) {
+		if (this.#state !== EventSource.CLOSED) console.warn(`Warn: Attempted to dispatch event "${type}" to a closed connection for: ${this.url}`);
 		return this.sendText(`event: ${type}\ndata: ${data}\n\n`, true);
 	}
 
 	close (unlink = true) {
-		if (this.#state === 2) {
+		if (this.#state === EventSource.CLOSED) {
 			this.#controller = null;
 			return false;
 		}
 
-		if (unlink) register.delete(this);
-
-		try {
-			this.#controller?.close();
-		} catch (e) {
-			console.error(e);
+		if (this.#controller) {
+			try { this.#controller.close(); }
+			catch (e) { console.error(e); }
 			this.#controller = null;
-			this.#state = 2;
-			return false;
 		}
 
 		// Cleanup
 		if (this.#timer) clearInterval(this.#timer);
-		this.#controller = null;
-		this.#state = 2;
+		if (unlink) register.delete(this);
+
+		// Mark closed
+		this.#state = EventSource.CLOSED;
 
 		return true;
 	}
-
-	static CONNECTING = 0;
-	static OPEN       = 1;
-	static CLOSED     = 2;
 }
 
 export class EventSourceSet extends Set<EventSource> {

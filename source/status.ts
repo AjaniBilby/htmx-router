@@ -98,7 +98,7 @@ function lookupCode(code: Status, init?: ResponseInit): ResponseInit {
 	return SetStatus(init, code, text);
 }
 function lookupStatus(text: StatusText, init?: ResponseInit): ResponseInit {
-	const code = index.code.get(text);
+	const code = index.code.get(text.toLowerCase());
 	if (code === undefined) throw new TypeError(`Status "${text}" is not a known status text`);
 	return SetStatus(init, code, text);
 }

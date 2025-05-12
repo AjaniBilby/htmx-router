@@ -19,7 +19,7 @@ export async function Resolve(request: Request, tree: RouteTree, config: Config)
 	let response: Response;
 	try {
 		if (ctx.url.pathname.endsWith("/")) {
-			ctx.headers.set("location", ctx.url.pathname + ctx.url.search + ctx.url.hash);
+			ctx.headers.set("location", ctx.url.pathname.slice(0, -1) + ctx.url.search + ctx.url.hash);
 			response = new Response("", MakeStatus("Permanent Redirect", { headers: ctx.headers }))
 		} else {
 			const x = ctx.url.pathname;

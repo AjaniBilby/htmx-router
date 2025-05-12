@@ -91,7 +91,10 @@ export class EventSource {
 	}
 
 	dispatch(type: string, data: string) {
-		if (this.#state !== EventSource.CLOSED) console.warn(`Warn: Attempted to dispatch event "${type}" to a closed connection for: ${this.url}`);
+		if (this.#state === EventSource.CLOSED) {
+			const err = new Error(`Warn: Attempted to dispatch event "${type}" to a closed connection for: ${this.url}`, {});
+			console.warn(err);
+		}
 		return this.sendText(`event: ${type}\ndata: ${data}\n\n`, true);
 	}
 

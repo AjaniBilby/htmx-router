@@ -1,6 +1,6 @@
 {
 	"name": "htmx-router",
-	"version": "1.0.13",
+	"version": "1.0.14",
 	"description": "A lightweight SSR framework with server+client islands",
 	"keywords": [
 		"htmx",

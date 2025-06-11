@@ -21,6 +21,7 @@ const headers: ResponseInit["headers"] = {
  */
 export class EventSource {
 	#controller: ReadableStreamDefaultController | null;
+	#signal: AbortSignal;
 	#timer: NodeJS.Timeout | null;
 	#state: number;
 
@@ -58,6 +59,7 @@ export class EventSource {
 		// immediate prepare for abortion
 		const cancel = () => { this.close(); };
 		request.signal.addEventListener('abort', cancel);
+		this.#signal = request.signal;
 
 		const start  = (c: ReadableStreamDefaultController<Uint8Array>) => { this.#controller = c; this.#state = EventSource.OPEN; };
 		const stream = new ReadableStream<Uint8Array>({ start, cancel }, { highWaterMark: 0 });
@@ -69,6 +71,16 @@ export class EventSource {
 	}
 
 	private sendBytes(chunk: Uint8Array, active: boolean) {
+		if (this.#state === EventSource.CLOSED) {
+			const err = new Error(`Warn: Attempted to send data on closed stream for: ${this.url}`);
+			console.warn(err);
+		}
+
+		if (this.#signal.aborted) {
+			this.close();
+			return false;
+		}
+
 		if (!this.#controller) return false;
 
 		try {
@@ -91,19 +103,10 @@ export class EventSource {
 	}
 
 	dispatch(type: string, data: string) {
-		if (this.#state === EventSource.CLOSED) {
-			const err = new Error(`Warn: Attempted to dispatch event "${type}" to a closed connection for: ${this.url}`, {});
-			console.warn(err);
-		}
 		return this.sendText(`event: ${type}\ndata: ${data}\n\n`, true);
 	}
 
 	close (unlink = true) {
-		if (this.#state === EventSource.CLOSED) {
-			this.#controller = null;
-			return false;
-		}
-
 		if (this.#controller) {
 			try { this.#controller.close(); }
 			catch (e) { console.error(e); }
@@ -113,6 +116,9 @@ export class EventSource {
 		// Cleanup
 		if (this.#timer) clearInterval(this.#timer);
 		if (unlink) register.delete(this);
+
+		// was already closed
+		if (this.#state === EventSource.CLOSED) return false;
 
 		// Mark closed
 		this.#state = EventSource.CLOSED;

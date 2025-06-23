@@ -29,6 +29,26 @@ function ClientMounter() {
 		}
 	}
 
+	/**
+	 * based on https://gist.github.com/hyamamoto/fd435505d29ebfa3d9716fd2be8d42f0,
+	 * derived from Java's string hashcode implementation
+	 */
+	function HashString(s: string): number {
+		let h=0;
+		for(let i=0; i < s.length; i++) h = Math.imul(31, h) + s.charCodeAt(i) | 0;
+		return h;
+	}
+
+	const mountKey = "htmx-router-cache";
+	type ElementCache = { component: string, data: string, hash: number };
+	function GetElementCache(elm: Element): ElementCache | null {
+		return (elm as any)[mountKey] || null;
+	}
+	function SetElementCache(elm: Element, cache: ElementCache) {
+		(elm as any)[mountKey] = cache;
+	}
+
+
 	window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
 		theme.infer();
 		theme.apply();
@@ -40,20 +60,36 @@ function ClientMounter() {
 	type MountRequest = [string, Element, string];
 	const mountRequests = new Array<MountRequest>();
 	function RequestMount(funcName: string, json: string) {
-		const elm = document.currentScript!.parentElement!;
-		if (elm.hasAttribute("mounted")) return;
+		const scope = document.currentScript!;
+		let elm = scope.previousElementSibling as HTMLElement;
+		if (!elm) {
+			const parent = scope.parentElement;
+			if (!parent) throw new Error("Mounting script does not exist within <div>");
+			elm = document.createElement("div");
+			elm.style.display = "contents";
+			parent.prepend(elm);
+		}
+
 		if (!document.body.contains(elm)) return;
 
 		mountRequests.push([funcName, elm, json]);
 	}
 
 	function Mount([ funcName, element, json ]: MountRequest) {
-		console.info("hydrating", funcName, "into", element);
 		const func = global.CLIENT[funcName];
 		if (!func) throw new Error(`Component ${funcName} is missing from client manifest`);
-		func(element, json);
-		element.setAttribute("component", funcName);
-		element.setAttribute("mounted", "yes");
+
+		const cache = GetElementCache(element);
+		const data = JSON.stringify(json);
+		const hash = HashString(data);
+
+		const hydrate = !!cache && cache.component === funcName
+			&& cache.hash === hash && cache.data == data;
+
+		if (config.verbose) console.info(hydrate ? "hydrating" : "mounting", funcName, "into", element);
+
+		func(element, json, hydrate);
+		SetElementCache(element, { component: funcName, data, hash });
 	}
 
 	function MountAll() {
@@ -97,15 +133,19 @@ function ClientMounter() {
 		document.addEventListener("htmx:load", MountAll);
 	}
 
-	return {
+	const config = {
+		_mount: RequestMount,
 		mountParentWith: RequestMount,
 		mount: {
 			freeze: Freeze,
 			unfreeze: Unfreeze,
 			step: MountStep
 		},
-		theme
-	}
+		theme,
+		verbose: window.location.hostname === "localhost"
+	};
+
+	return config;
 };
 
 

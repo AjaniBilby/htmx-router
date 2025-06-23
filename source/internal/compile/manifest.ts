@@ -91,12 +91,12 @@ function BuildServerManifest(type: string, imported: Imports) {
 	}
 
 	out += `\nimport { Style } from "htmx-router/css";\n`
-		+ `const island = new Style("i", ".this{display:contents;}\\n").name;\n\n`
+		+ `const island = new Style("hx", ".this{display:contents;}\\n").name;\n\n`
 		+ "type FirstArg<T> = T extends (arg: infer U, ...args: any[]) => any ? U : never;\n"
 		+ "function mount(name: string, json: string, ssr?: JSX.Element) {\n"
 		+ "\treturn (<div className={island}>\n"
 		+ `\t\t{ssr}\n`
-		+ `\t\t${SafeScript(type, "`Router.mountParentWith('${name}', ${json})`")}\n`
+		+ `\t\t${SafeScript(type, "`Router._mount('${name}', ${json})`")}\n`
 		+ "\t</div>);\n"
 		+ "}\n"
 		+ "function Stringify(data: any) {\n"
@@ -143,16 +143,10 @@ function BuildClientManifest(type: string, imports: Imports) {
 	for (const imported of imports) {
 		if (Array.isArray(imported.mapping)) {
 			for (const map of imported.mapping) {
-				out += `\t${map.name}: async (element: HTMLElement, props: any) => {\n`
-					+ `\t\tconst C = (await import("${imported.href}")).${map.original};\n`
-					+ bind.mount
-					+ `\n\t},\n`;
+				out += BuildClientMounter(map.name, map.original, imported.href, bind.mount);
 			}
 		} else {
-			out += `\t${imported.mapping.name}: async (element: HTMLElement, props: any) => {\n`
-				+ `\t\tconst C = (await import("${imported.href}")).default;\n`
-				+ bind.mount
-				+ `\n\t},\n`;
+			out += BuildClientMounter(imported.mapping.name, "default", imported.href, bind.mount);
 		}
 	}
 	out += "}\nexport default client;\n"
@@ -164,16 +158,22 @@ function BuildClientManifest(type: string, imports: Imports) {
 	return out;
 }
 
-
+function BuildClientMounter(output: string, input: string, href: string, mounter: string) {
+	return `\t${output}: async (element: HTMLElement, props: any, hydrate: boolean) => {\n`
+		+ `\t\tconst C = (await import("${href}")).${input};\n`
+		+ mounter
+		+ `\n\t},\n`
+}
 
 
 const binding = {
 
 	react: {
-		mount: '\t\tconst d = await import("react-dom/client");\n'
-			+ '\t\tconst r = d.createRoot(element);\n'
-			+ '\t\tr.render(<C {...props} />);\n'
-			+ '\t\tmounted.set(element, r);',
+		mount: `const d = await import("react-dom/client");
+		const c = <C {...props} />;
+		const r = hydrate ? d.hydrateRoot(element, c) : d.createRoot(element);
+		if (!hydrate) r.render(<C {...props} />);
+		mounted.set(element, r);\n`,
 		unmount: `
 import type { Root } from "react-dom/client";
 const mounted = new Map<HTMLElement, Root>();
@@ -214,7 +214,7 @@ function CleanNode(node: Node) {
 	if (node instanceof HTMLElement) {
 		const root = mounted.get(node);
 		if (root) {
-			console.info("unmounting", node);
+			if (window.Router?.verbose) console.info("unmounting", node);
 			Unmount(node, root);
 		}
 	}

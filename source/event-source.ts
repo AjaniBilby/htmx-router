@@ -57,7 +57,7 @@ export class EventSource {
 		this.#updatedAt = 0;
 
 		// immediate prepare for abortion
-		const cancel = () => { this.close(); };
+		const cancel = () => { this.close(); request.signal.removeEventListener("abort", cancel) };
 		request.signal.addEventListener('abort', cancel);
 		this.#signal = request.signal;
 
@@ -70,13 +70,15 @@ export class EventSource {
 		register.add(this);
 	}
 
+	isAborted() { return this.#signal.aborted; }
+
 	private sendBytes(chunk: Uint8Array, active: boolean) {
 		if (this.#state === EventSource.CLOSED) {
 			const err = new Error(`Warn: Attempted to send data on closed stream for: ${this.url}`);
 			console.warn(err);
 		}
 
-		if (this.#signal.aborted) {
+		if (this.isAborted()) {
 			this.close();
 			return false;
 		}

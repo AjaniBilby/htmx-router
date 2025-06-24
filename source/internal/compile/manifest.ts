@@ -95,7 +95,7 @@ function BuildServerManifest(type: string, imported: Imports) {
 		+ "type FirstArg<T> = T extends (arg: infer U, ...args: any[]) => any ? U : never;\n"
 		+ "function mount(name: string, json: string, ssr?: JSX.Element) {\n"
 		+ "\treturn (<div className={island}>\n"
-		+ `\t\t{ssr}\n`
+		+ `\t\t<div className={island}>{ssr}</div>\n`
 		+ `\t\t${SafeScript(type, "`Router._mount('${name}', ${json})`")}\n`
 		+ "\t</div>);\n"
 		+ "}\n"

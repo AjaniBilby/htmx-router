@@ -6,6 +6,9 @@ import type { RouteTree } from '../../router.js';
 import { GenericContext } from "../router.js";
 import { MakeStatus } from "../../status.js";
 
+/**
+ * @deprecated - use createServer().resolve
+ */
 export function createRequestHandler(config: Config) {
 	return async (req: Request) => {
 		const mod: RouterModule = typeof config.build === "function" ? await config.build() : await config.build;
@@ -13,6 +16,9 @@ export function createRequestHandler(config: Config) {
 	}
 }
 
+/**
+ * @deprecated
+ */
 export async function Resolve(request: Request, tree: RouteTree, config: Config) {
 	const ctx = new GenericContext(request, new URL(request.url), config.render);
 

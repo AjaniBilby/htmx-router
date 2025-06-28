@@ -208,7 +208,7 @@ export class RouteTree {
 		AssertUnreachable(res);
 	}
 
-	private unwrap(ctx: GenericContext, res: unknown) {
+	unwrap(ctx: GenericContext, res: unknown) {
 		if (!this.slug) throw res;
 		return this.slug.error(ctx, res);
 	}

@@ -8,6 +8,9 @@ import type { RouteTree } from '../../router.js';
 import * as native from "./native.js";
 import * as http from "./http.js";
 
+/**
+ * @deprecated
+ */
 export type Config = {
 	build: Promise<any> | (() => Promise<Record<string, any>>),
 	viteDevServer: ViteDevServer | null,
@@ -16,7 +19,9 @@ export type Config = {
 
 export type RouterModule = { tree: RouteTree };
 
-
+/**
+ * @deprecated
+ */
 export const createRequestHandler = {
 	http: http.createRequestHandler,
 	native: native.createRequestHandler

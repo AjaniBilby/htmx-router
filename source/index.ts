@@ -1,6 +1,9 @@
 import type { ParameterShaper } from "./util/parameters.js";
 import type { RouteContext } from "./router.js";
 
+import { HtmxRouterServer, Config } from "./internal/request/server.js";
+import * as node from "./internal/request/compatibility/node.js";
+
 import { createRequestHandler } from "./internal/request/index.js";
 
 export type RenderFunction<T extends ParameterShaper = {}> = (ctx: RouteContext<T>) => Promise<Response | JSX.Element | null>;
@@ -22,4 +25,9 @@ type ClientIsland<T> = T extends (props: infer P) => JSX.Element
 	: T;
 
 
-export { createRequestHandler, RouteContext };
+export function createServer(config: Config) {
+	return new HtmxRouterServer(config);
+}
+
+
+export { createRequestHandler, RouteContext, node };

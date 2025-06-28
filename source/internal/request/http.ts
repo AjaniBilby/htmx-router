@@ -4,8 +4,9 @@ ServerOnlyWarning("http-request");
 import type { IncomingMessage, ServerResponse } from "http";
 import type { ViteDevServer } from "vite";
 
-import { GenericContext } from "../router.js";
 import type { RouteTree } from "../../router.js";
+import { GenericContext } from "../router.js";
+import { CreateRequest } from "./compatibility/node.js";
 import { Resolve } from "./native.js";
 
 type Config = {
@@ -16,11 +17,15 @@ type Config = {
 
 type RouterModule = { tree: RouteTree }
 
+
+/**
+ * @deprecated - use createServer().nodeAdaptor()
+ */
 export function createRequestHandler(config: Config) {
 	return async (req: IncomingMessage, res: ServerResponse) => {
 		try {
 			const mod: RouterModule = typeof config.build === "function" ? await config.build() : await config.build;
-			const request = NativeRequest(req);
+			const request = CreateRequest(req);
 
 			let { response, headers } = await Resolve(request, mod.tree, config);
 			res.writeHead(response.status, headers);
@@ -50,30 +55,4 @@ export function createRequestHandler(config: Config) {
 			}
 		}
 	}
-}
-
-function NativeRequest(req: IncomingMessage & { originalUrl?: string }) {
-	const ctrl = new AbortController();
-	const headers = new Headers(req.headers as any);
-	const url = new URL(`http://${headers.get('host')}${req.originalUrl || req.url}`);
-
-	req.once('aborted', () => ctrl.abort());
-
-	const bodied = req.method !== "GET" && req.method !== "HEAD";
-	const request = new Request(url, {
-		headers,
-		method: req.method,
-		body: bodied ? req : undefined as any,
-		signal: ctrl.signal,
-		referrer: headers.get("referrer") || undefined,
-		// @ts-ignore
-		duplex: bodied ? 'half' : undefined
-	});
-
-	if (!request.headers.has("X-Real-IP")) {
-		const info = req.socket.address();
-		if ("address" in info) request.headers.set("X-Real-IP", info.address);
-	}
-
-	return request;
 }

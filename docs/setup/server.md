@@ -7,7 +7,6 @@ import express from 'express';
 
 
 // create the vite server
-      );
 const viteDevServer = isProduction ? null
   : await import("vite").then((vite) =>
     vite.createServer({

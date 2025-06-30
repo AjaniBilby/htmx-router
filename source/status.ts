@@ -107,10 +107,4 @@ function SetStatus(into: ResponseInit = {}, status: number, statusText: string) 
 	into.statusText = statusText;
 	into.status = status;
 	return into;
-}
-
-
-/**
- * @deprecated
- */
-export type Status = StatusCode;
+};

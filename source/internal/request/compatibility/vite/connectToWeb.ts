@@ -1,18 +1,19 @@
 // Taken From: https://github.com/vikejs/vike-server/blob/7bcb7805fa39ef945adc73f4faf5c89a81f3f7ec/packages/vike-node/src/runtime/adapters/connectToWeb.ts
+import type { IncomingMessage, ServerResponse } from 'node:http';
+import { Readable } from 'node:stream';
 
 export { connectToWeb }
 
-import type { IncomingMessage, ServerResponse } from 'node:http';
 import { createServerResponse } from './createServerResponse.js';
 import { flattenHeaders } from './header-utils.js';
-import { Readable } from 'node:stream';
+import { GenericContext } from '../../../router.js';
 
 type NextFunction = (err?: unknown) => void
 type ConnectMiddleware<
 	PlatformRequest extends IncomingMessage = IncomingMessage,
 	PlatformResponse extends ServerResponse = ServerResponse
 > = (req: PlatformRequest, res: PlatformResponse, next: NextFunction) => void
-type WebHandler = (request: Request) => Response | undefined | Promise<Response | undefined>
+type WebHandler = (ctx: GenericContext) => Promise<Response | null>
 
 const statusCodesWithoutBody = [
 	100, // Continue
@@ -31,11 +32,11 @@ const statusCodesWithoutBody = [
  * @returns {WebHandler} A function that handles web requests and returns a Response or undefined.
  */
 function connectToWeb(handler: ConnectMiddleware): WebHandler {
-	return async (request: Request): Promise<Response | undefined> => {
-		const req = createIncomingMessage(request);
+	return async (ctx: GenericContext): Promise<Response | null> => {
+		const req = createIncomingMessage(ctx.request);
 		const { res, onReadable } = createServerResponse(req);
 
-		return new Promise<Response | undefined>((resolve, reject) => {
+		return new Promise<Response | null>((resolve, reject) => {
 			onReadable(({ readable, headers, statusCode }) => {
 				const responseBody = statusCodesWithoutBody.includes(statusCode)
 					? null
@@ -50,7 +51,7 @@ function connectToWeb(handler: ConnectMiddleware): WebHandler {
 
 			const next = (error?: unknown) => {
 				if (error) reject(error instanceof Error ? error : new Error(String(error)));
-				else resolve(undefined);
+				else resolve(null);
 			}
 
 			Promise.resolve(handler(req, res, next)).catch(next)

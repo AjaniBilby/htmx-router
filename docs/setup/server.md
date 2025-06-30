@@ -4,26 +4,23 @@ Finally you just need something to actually give the router http requests, this 
 
 ```js title="server.js"
 import express from 'express';
-import { createRequestHandler } from 'htmx-router';
+
 
 // create the vite server
-const viteDevServer =
-  process.env.NODE_ENV === "production"
-    ? null
-    : await import("vite").then((vite) =>
-        vite.createServer({
-          server: { middlewareMode: true },
-          appType: 'custom'
-        })
       );
+const viteDevServer = isProduction ? null
+  : await import("vite").then((vite) =>
+    vite.createServer({
+      server: { middlewareMode: true },
+      appType: 'custom'
+    })
+  );
 
 // expose assets generated for the client by the server and client builds
 const app = express();
-if (viteDevServer) {
-  app.use(viteDevServer.middlewares)
-} else {
+if (isProduction) {
   app.use(express.static("./dist/client"));
-  app.use("/dist/asset", express.static("./dist/server/dist/asset",));
+  app.use("/dist/asset", express.static("./dist/server/dist/asset"));
 }
 
 // load your server entry
@@ -31,11 +28,14 @@ const build = viteDevServer
   ? () => viteDevServer.ssrLoadModule('./app/entry.server.ts')
   : await import('./dist/server/entry.server.js');
 
-// bind to htmx-router
-app.use('*', createRequestHandler.http({
+import { createHtmxServer } from 'htmx-router/server';
+const htmx = createHtmxServer.http({
   build, viteDevServer,
   render { /* (1) */ } 
-}));
+});
+
+// bind to htmx-router
+app.use('*', htmx.nodeAdaptor(true));
 
 // Start http server
 const port = process.env.PORT || 3000;
@@ -48,7 +48,16 @@ app.listen(port, () => {
 
 If you aren't using express, and say using something more like deno's native http server you would use `createRequestHandler.native` instead:
 ```js
-Deno.serve(createRequestHandler.native({ build, viteDevServer, render }));
+export default {
+  async fetch (req) {
+    const route: Response | null = await htmx.resolve(req, false);
+    if (route) return route;
+
+    // do some other static file serving
+
+    return htmx.error(req); // no error will create a 404
+  }
+} satisfies Deno.ServeDefaultExport
 ```
 
 ## Helpful extras

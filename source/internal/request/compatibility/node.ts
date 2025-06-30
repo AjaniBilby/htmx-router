@@ -2,10 +2,17 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 
 import type { HtmxRouterServer } from "../server.js";
 
-/**
- * @deprecated
- */
-export function CreateRequest(req: IncomingMessage & { originalUrl?: string }) {
+export function NodeAdaptor(server: HtmxRouterServer, resolve404: boolean) {
+	return async (req: IncomingMessage, res: ServerResponse) => {
+		const request = CreateRequest(req);
+		const response = await server.resolve(request, resolve404);
+		if (response === null) return;
+
+		ConsumeResponse(res, response);
+	}
+}
+
+function CreateRequest(req: IncomingMessage & { originalUrl?: string }) {
 	const ctrl = new AbortController();
 	const headers = new Headers(req.headers as any);
 	const url = new URL(`http://${headers.get('host')}${req.originalUrl || req.url}`);
@@ -32,7 +39,7 @@ export function CreateRequest(req: IncomingMessage & { originalUrl?: string }) {
 }
 
 
-export async function ConsumeResponse(into: ServerResponse, response: Response) {
+async function ConsumeResponse(into: ServerResponse, response: Response) {
 	const headers: { [key: string]: string | string[] } = Object.fromEntries(response.headers as any);
 
 	{ // handle multi-cookie setting
@@ -53,16 +60,5 @@ export async function ConsumeResponse(into: ServerResponse, response: Response) 
 	} else {
 		const rendered = await response.text();
 		into.end(rendered);
-	}
-}
-
-
-export function NodeAdaptor(server: HtmxRouterServer, resolve404: boolean) {
-	return async (req: IncomingMessage, res: ServerResponse) => {
-		const request = CreateRequest(req);
-		const response = await server.resolve(request, resolve404);
-		if (response === null) return;
-
-		ConsumeResponse(res, response);
 	}
 }

@@ -1,0 +1,4 @@
+# Ignore the htmx-router generated components
+defer.tsx
+head.tsx
+scripts.tsx

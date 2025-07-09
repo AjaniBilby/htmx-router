@@ -1,8 +1,0 @@
-{
-	"framework": "react",
-	"component": {
-		"defer":   "./app/component/server/defer.tsx",
-		"head":    "./app/component/server/head.tsx",
-		"scripts": "./app/component/server/scripts.tsx"
-	}
-}

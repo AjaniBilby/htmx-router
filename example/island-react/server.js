@@ -1,4 +1,4 @@
-import { createRequestHandler } from 'htmx-router';
+import { createHtmxServer } from 'htmx-router/server.js';
 import { renderToString } from 'react-dom/server';
 import express from 'express';
 import morgan from "morgan";
@@ -7,21 +7,18 @@ const port = process.env.PORT || 5173;
 const app = express();
 
 
-const viteDevServer =
-	process.env.NODE_ENV === "production"
-		? null
-		: await import("vite").then((vite) =>
-				vite.createServer({
-					server: { middlewareMode: true },
-					appType: 'custom'
-				})
-			);
+const isProduction = process.env.NODE_ENV === "production";
+const viteDevServer = isProduction ? null
+	: await import("vite").then((vite) =>
+		vite.createServer({
+			server: { middlewareMode: true },
+			appType: 'custom'
+		})
+	);
 
-if (viteDevServer) {
-	app.use(viteDevServer.middlewares)
-} else {
+if (isProduction) {
 	app.use(express.static("./dist/client"));
-	app.use("/dist/asset", express.static("./dist/server/dist/asset",));
+	app.use("/dist/asset", express.static("./dist/server/dist/asset"));
 }
 
 // logging
@@ -31,7 +28,7 @@ const build = viteDevServer
 	? () => viteDevServer.ssrLoadModule('./app/entry.server.ts')
 	: await import('./dist/server/entry.server.js');
 
-app.use('*', createRequestHandler.http({
+const htmx = createHtmxServer({
 	build, viteDevServer,
 	render: (jsx, headers) => {
 		headers.set("Content-Type", "text/html; charset=UTF-8");
@@ -39,7 +36,9 @@ app.use('*', createRequestHandler.http({
 		const stream = renderToString(jsx);
 		return new Response(stream, { headers });
 	}
-}));
+});
+
+app.use('*', htmx.nodeAdaptor(true));
 
 // Start http server
 app.listen(port, () => {
@@ -53,4 +52,12 @@ if (viteDevServer)
 
 	console.log('Triggering full page reload');
 	viteDevServer.ws.send({ type: 'full-reload' });
+});
+
+process.on('unhandledRejection', (reason, p) => {
+	console.error(reason, 'Unhandled Rejection at Promise', p);
+})
+.on('uncaughtException', err => {
+	console.error(err, 'Uncaught Exception thrown');
+	process.exit(1);
 });

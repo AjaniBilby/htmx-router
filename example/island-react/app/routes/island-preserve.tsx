@@ -1,4 +1,5 @@
-import { Dynamic } from "~/router";
+import { Defer } from "~/component/server/defer";
+
 import { shell } from "./$";
 import { randomNumber } from "./island-flashing";
 
@@ -9,7 +10,7 @@ export async function loader() {
 		<p>If you don't want an island resetting on each page navigation</p>
 
 		<blockquote id="retain" hx-preserve="true">
-			<Dynamic params={{}} loader={randomNumber}><div></div></Dynamic>
+			<Defer params={{}} loader={randomNumber}><div></div></Defer>
 		</blockquote>
 
 		<a href="/island-flashing">Next</a>

@@ -1,4 +1,4 @@
-import { Scripts } from "~/router"
+import { Scripts } from "~/component/server/scripts"
 
 export function shell(body: JSX.Element, options: { title: string }) {
 	return <html lang="en">

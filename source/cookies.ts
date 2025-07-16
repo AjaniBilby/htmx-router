@@ -79,9 +79,11 @@ export class Cookies {
 		return encodeURIComponent(name)+"="+encodeURIComponent(this.map[name])+StringifyOptions(this.config[name]);;
 	}
 
-	unset(name: string) {
+	unset(name: string, options: CookieOptions = { maxAge: -1 }) {
+		options.maxAge ||= -1;
+
 		this.parse();
-		return this.set(name, "", { maxAge: 0 })
+		return this.set(name, "", options);
 	}
 
 	/** Creates the response headers required to make the changes done to these cookies */

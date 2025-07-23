@@ -2,6 +2,7 @@ import { AssertUnreachable, ServerOnlyWarning } from "./internal/util.js";
 ServerOnlyWarning("router");
 
 import type { GenericContext } from "./internal/router.js";
+import type { RequestTimer } from "./timer.js";
 import { Parameterized, ParameterPrelude, ParameterShaper } from './util/parameters.js';
 import { RouteModule } from "./index.js";
 import { MakeStatus } from "./status.js";
@@ -53,6 +54,7 @@ export class RouteContext<T extends ParameterShaper = {}> {
 	readonly cookie:  Cookies;
 	readonly params:  Parameterized<T>;
 	readonly url:     URL;
+	readonly timer:   RequestTimer;
 
 	render: GenericContext["render"];
 
@@ -62,6 +64,7 @@ export class RouteContext<T extends ParameterShaper = {}> {
 		this.headers = base.headers;
 		this.request = base.request;
 		this.render  = base.render;
+		this.timer   = base.timer;
 		this.url     = base.url;
 
 

@@ -28,9 +28,9 @@ const build = viteDevServer
   : await import('./dist/server/entry.server.js');
 
 import { createHtmxServer } from 'htmx-router/server';
-const htmx = createHtmxServer.http({
+const htmx = createHtmxServer({
   build, viteDevServer,
-  render { /* (1) */ } 
+  render { /* (1) */ }
 });
 
 // bind to htmx-router

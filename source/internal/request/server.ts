@@ -17,6 +17,9 @@ export type Config = {
 
 	// dev only
 	viteDevServer: ViteDevServer | null,
+
+	poweredBy?: boolean
+	timers?: boolean /// enable or disable X-Time headers
 };
 
 type ServerBindType = "pre" | "post";
@@ -39,6 +42,8 @@ export class HtmxRouterServer {
 	readonly vite:   Config["viteDevServer"];
 	readonly render: Config["render"];
 	readonly build:  Config["build"];
+	readonly poweredBy: boolean;
+	readonly timers: boolean;
 
 	#binding: {
 		pre:  Array<ServerBind>,
@@ -48,6 +53,8 @@ export class HtmxRouterServer {
 	constructor (config: Config) {
 		this.vite = config.viteDevServer;
 
+		this.poweredBy = config.poweredBy === undefined ? true : config.poweredBy;
+		this.timers = config.timers === undefined ? !!config.viteDevServer : config.timers;
 		this.render = config.render;
 		this.build  = config.build;
 
@@ -82,22 +89,22 @@ export class HtmxRouterServer {
 
 	async resolve<T extends boolean> (request: Request, resolve404: T = true as T): Promise<T extends true ? Response : (Response | null)> {
 		const url = new URL(request.url);
-		const ctx = new GenericContext(request, url, this.render);
+		const ctx = new GenericContext(request, url, this);
 
 		{ // pre-binding
 			const res = await this.#applyBindings("pre", ctx);
-			if (res) return res;
+			if (res) return ctx.finalize(res);
 		}
 
 		const tree = await this.#getTree();
 		{ // route
 			const res = await this.#resolveRoute(ctx, tree);
-			if (res) return res;
+			if (res) return ctx.finalize(res);
 		}
 
 		{ // post-binding
 			const res = await this.#applyBindings("post", ctx);
-			if (res) return res;
+			if (res) return ctx.finalize(res);
 		}
 
 		if (resolve404) return await this.error(ctx, undefined);
@@ -113,11 +120,12 @@ export class HtmxRouterServer {
 	async error(ctx: Request | GenericContext, e: unknown | undefined) {
 		if (e === undefined) e = new Response("No Route", MakeStatus("Not Found"));
 
-		if (ctx instanceof Request) ctx = new GenericContext(ctx, new URL(ctx.url), this.render);
+		if (ctx instanceof Request) ctx = new GenericContext(ctx, new URL(ctx.url), this);
 
 		const tree = await this.#getTree();
 
-		return await tree.unwrap(ctx, e);
+		const res = await tree.unwrap(ctx, e);
+		return ctx.finalize(res);
 	}
 
 	/**

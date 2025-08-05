@@ -126,7 +126,7 @@ export function AssertETagStale(request: Request, headers: Headers, etag: string
 	headers.set("ETag", etag);
 
 	const client = request.headers.get("if-none-match");
-	if (client === etag) return;
+	if (client !== etag) return;
 
 	const res = new Response(null, {
 		status: 304, statusText: "Not Modified",

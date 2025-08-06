@@ -77,6 +77,12 @@ export class RequestTimer {
 		const last = this.#checkpoints[limit];
 		headers.set(`X-Time-${last.name}`, String(end-last.time));
 	}
+
+	/**
+	 * This action is non-reversible
+	 * It will clear all timers for the request, and ensure they aren't included in the response
+	 */
+	disable() { this.#checkpoints = null; }
 }
 
 class Checkpoint {

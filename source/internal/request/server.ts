@@ -13,7 +13,7 @@ import { RouteTree } from "../../router.js";
 
 export type Config = {
 	build:  () => Promise<RouterModule> | Promise<RouterModule>,
-	render: GenericContext["render"],
+	render: (res: JSX.Element, headers: Headers, ctx: GenericContext) => Promise<Response | BodyInit> | Response | BodyInit,
 
 	// dev only
 	viteDevServer: ViteDevServer | null,
@@ -55,8 +55,11 @@ export class HtmxRouterServer {
 
 		this.poweredBy = config.poweredBy === undefined ? true : config.poweredBy;
 		this.timers = config.timers === undefined ? !!config.viteDevServer : config.timers;
-		this.render = config.render;
-		this.build  = config.build;
+		this.render = function(res, header, ctx) {
+			ctx.timer.checkpoint("render");
+			return config.render(res, header, ctx);
+		};
+		this.build = config.build;
 
 		this.#binding = {
 			pre:  [UrlCleaner],

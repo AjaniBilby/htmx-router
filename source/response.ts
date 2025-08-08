@@ -116,6 +116,8 @@ export function refresh(init?: ResponseInit & { clientOnly?: boolean }) {
  * @see {@link https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/ETag | ETag - MDN Web Docs }
  */
 export function AssertETagStale(request: Request, headers: Headers, etag: string, options?: { revalidate?: number, public?: boolean }): void {
+	headers.delete("Cache-Control"); // clear any defaults
+
 	if (options) {
 		// default to private, because it's the slightly less worse of the two potential foot guns
 		if (options.public) headers.append("Cache-Control", "public");
@@ -125,7 +127,7 @@ export function AssertETagStale(request: Request, headers: Headers, etag: string
 	}
 
 	headers.append("Cache-Control", "must-revalidate");
-	headers.set("ETag", `"${etag}"`);
+	headers.set("ETag", `"${encodeURIComponent(etag.trim())}"`);
 
 	const client = request.headers.get("if-none-match");
 	if (client !== etag) return;

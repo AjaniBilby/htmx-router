@@ -2,17 +2,32 @@
 	"name": "htmx-router",
 	"version": "2.0.6",
 	"description": "A lightweight SSR framework with server+client islands",
-	"keywords": [
-		"htmx",
-		"router",
-		"client islands",
-		"ssr",
-		"vite"
-	],
-	"main": "./index.js",
+	"keywords": [ "htmx", "router", "client islands", "ssr", "vite" ],
 	"type": "module",
 	"scripts": {
 		"build": "tsc"
+	},
+	"main": "./index.js",
+	"exports": {
+		".":              "./index.js",
+		"./cookies":      "./cookies.js",
+		"./css":          "./css.js",
+		"./defer":        "./defer.js",
+		"./endpoint":     "./endpoint.js",
+		"./event-source": "./event-source.js",
+		"./navigate":     "./navigate.js",
+		"./response":     "./response.js",
+		"./router":       "./router.js",
+		"./server":       "./server.js",
+		"./shell":        "./shell.js",
+		"./status":       "./status.js",
+		"./timer":        "./timer.js",
+		"./vite":         "./vite/index.js",
+
+		"./util/parameters": "./util/parameters.js",
+
+		"./internal/client": "./internal/client.js",
+		"./internal/mount":  "./internal/mount.js"
 	},
 	"bin": {
 		"htmx-router": "cli/index.js"

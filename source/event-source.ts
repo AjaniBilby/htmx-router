@@ -68,7 +68,7 @@ export class EventSource<JsxEnabled extends boolean = false> {
 
 		this.response = new Response(stream, { headers });
 
-		keepAlive.add(this.#keepAlive);
+		keepAlive.add(this as EventSource<false>);
 	}
 
 	isAborted() { return this.#signal.aborted; }
@@ -101,7 +101,11 @@ export class EventSource<JsxEnabled extends boolean = false> {
 		return this.#sendBytes(encoder.encode(chunk), simulated);
 	}
 
-	#keepAlive() {
+	/**
+	 * For internal use only
+	 * @deprecated
+	 */
+	_keepAlive() {
 		return this.#sendText("\n\n", false);
 	}
 
@@ -124,7 +128,7 @@ export class EventSource<JsxEnabled extends boolean = false> {
 		}
 
 		// Cleanup
-		keepAlive.delete(this.#keepAlive);
+		keepAlive.delete(this as EventSource<false>);
 
 		// was already closed
 		if (this.#state === EventSource.CLOSED) return false;
@@ -241,10 +245,16 @@ export class SharedEventSource<JsxEnabled extends boolean = false> {
 
 // Auto close all SSE streams when shutdown requested
 // Without this graceful shutdowns will hang indefinitely
-const keepAlive = new Set<() => void>();
+const keepAlive = new Set<EventSource<false>>();
 const interval = setInterval(() => {
-	for (const e of keepAlive) e();
-}, 30_000);
+	for (const e of keepAlive) {
+		if (e.readyState === EventSource.CLOSED) {
+			keepAlive.delete(e);
+			continue;
+		}
+		e._keepAlive();
+	}
+}, 10_000);
 
 
 function Shutdown () { clearInterval(interval); }

@@ -231,19 +231,22 @@ class RouteLeaf {
 		if (jsx === null) return null;
 		if (jsx instanceof Response) return jsx;
 
-		const res = await ctx.render(jsx);
-		if (res instanceof Response) return res;
-
+		ctx.timer.checkpoint("render");
+		const res = ctx.render(jsx);
 		return html(res, { headers: ctx.headers });
 	}
 
 	async error(ctx: GenericContext, e: unknown) {
 		if (!this.module.error) throw e;
 
-		let jsx = await this.module.error(ctx.shape({}, this.path), e);
+		const jsx = await this.module.error(ctx.shape({}, this.path), e);
 
-		const caught = jsx instanceof Response ? jsx
-			: await ctx.render(jsx);
+		let caught: Response | string;
+		if (jsx instanceof Response) caught = jsx;
+		else {
+			ctx.timer.checkpoint("render");
+			caught = ctx.render(jsx);
+		}
 
 		if (caught instanceof Response) {
 			caught.headers.set("X-Caught", "true");

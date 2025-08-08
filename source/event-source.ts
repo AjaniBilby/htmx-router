@@ -14,16 +14,24 @@ const headers: ResponseInit["headers"] = {
 	"Connection": "keep-alive",
 }
 
+type DefaultOptions = {
+	request: Request,
+	highWaterMark?: number,
+	keepAlive?: number,
+};
+type RenderOptions = DefaultOptions & { render: Render };
+type Render = (jsx: JSX.Element) => string;
 
 /**
  * Helper for Server-Sent-Events, with auto close on SIGTERM and SIGHUP messages
  * Includes a keep alive empty packet sent every 30sec (because Chrome implodes at 120sec, and can be unreliable at 60sec)
  */
-export class EventSource {
+export class EventSource<JsxEnabled extends boolean = false> {
 	#controller: ReadableStreamDefaultController | null;
 	#signal: AbortSignal;
 	#timer: NodeJS.Timeout | null;
 	#state: number;
+	#render: (jsx: JSX.Element) => string | undefined;
 
 	readonly response: Response;
 
@@ -45,34 +53,34 @@ export class EventSource {
 	static OPEN       = 1;
 	static CLOSED     = 2;
 
-
-
-	constructor(request: Request, keepAlive = 30_000) {
+	constructor(props: JsxEnabled extends true ? RenderOptions : DefaultOptions) {
 		this.#controller = null;
 		this.#state = EventSource.CONNECTING;
-		this.withCredentials = request.mode === "cors";
-		this.url = request.url;
+		this.#render = (props as RenderOptions)?.render || undefined;
+
+		this.withCredentials = props.request.mode === "cors";
+		this.url = props.request.url;
 
 		this.createdAt = Date.now();
 		this.#updatedAt = 0;
 
 		// immediate prepare for abortion
-		const cancel = () => { this.close(); request.signal.removeEventListener("abort", cancel) };
-		request.signal.addEventListener('abort', cancel);
-		this.#signal = request.signal;
+		this.#signal = props.request.signal;
+		const cancel = () => { this.close(); this.#signal.removeEventListener("abort", cancel) };
+		this.#signal.addEventListener('abort', cancel);
 
 		const start  = (c: ReadableStreamDefaultController<Uint8Array>) => { this.#controller = c; this.#state = EventSource.OPEN; };
 		const stream = new ReadableStream<Uint8Array>({ start, cancel }, { highWaterMark: 0 });
 
 		this.response = new Response(stream, { headers });
 
-		this.#timer = setInterval(() => this.keepAlive(), keepAlive);
-		register.add(this);
+		this.#timer = setInterval(() => this.#keepAlive(), props.keepAlive || 30_000);
+		register.add(this as EventSource<false>);
 	}
 
 	isAborted() { return this.#signal.aborted; }
 
-	private sendBytes(chunk: Uint8Array, active: boolean) {
+	#sendBytes(chunk: Uint8Array, active: boolean) {
 		if (this.#state === EventSource.CLOSED) {
 			const err = new Error(`Warn: Attempted to send data on closed stream for: ${this.url}`);
 			console.warn(err);
@@ -96,16 +104,23 @@ export class EventSource {
 		}
 	}
 
-	private sendText(chunk: string, simulated: boolean) {
-		return this.sendBytes(encoder.encode(chunk), simulated);
+	#sendText(chunk: string, simulated: boolean) {
+		return this.#sendBytes(encoder.encode(chunk), simulated);
 	}
 
-	private keepAlive() {
-		return this.sendText("\n\n", false);
+	#keepAlive() {
+		return this.#sendText("\n\n", false);
 	}
 
-	dispatch(type: string, data: string) {
-		return this.sendText(`event: ${type}\ndata: ${data}\n\n`, true);
+	dispatch(type: string, data: JsxEnabled extends true ? (JSX.Element | string) : string) {
+		let html;
+		if (typeof data === "string") html = data;
+		else {
+			if (!this.#render) throw new Error(`Cannot render to JSX when no renderer provided during class initialization`);
+			html = this.#render(data);
+		}
+
+		return this.#sendText(`event: ${type}\ndata: ${html}\n\n`, true);
 	}
 
 	close (unlink = true) {
@@ -117,7 +132,7 @@ export class EventSource {
 
 		// Cleanup
 		if (this.#timer) clearInterval(this.#timer);
-		if (unlink) register.delete(this);
+		if (unlink) register.delete(this as EventSource<false>);
 
 		// was already closed
 		if (this.#state === EventSource.CLOSED) return false;
@@ -129,7 +144,7 @@ export class EventSource {
 	}
 }
 
-export class EventSourceSet extends Set<EventSource> {
+export class EventSourceSet<JsxEnabled extends boolean = false> extends Set<EventSource<JsxEnabled>> {
 	/** Send update to all EventSources, auto closing failed dispatches */
 	dispatch(type: string, data: string) {
 		for (const stream of this) {

@@ -15,6 +15,7 @@ export class GenericContext {
 	readonly params: { [key: string]: string };
 	readonly timer: RequestTimer;
 	readonly url: URL;
+	readonly render: HtmxRouterServer["render"];
 
 	constructor(request: GenericContext["request"], url: GenericContext["url"], scope: HtmxRouterServer) {
 		this.cookie  = new Cookies(request.headers.get("cookie"));
@@ -24,11 +25,7 @@ export class GenericContext {
 		this.url     = url;
 		this.timer   = new RequestTimer(scope.timers);
 		this.scope   = scope;
-	}
-
-	render(res: JSX.Element) {
-		this.timer.checkpoint("render");
-		return this.scope.render(res, this.headers, this);
+		this.render  = scope.render;
 	}
 
 	finalize(res: Response) { this.timer.writeTo(res.headers); }

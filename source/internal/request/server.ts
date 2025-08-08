@@ -14,7 +14,7 @@ import { redirect } from "../../response.js";
 
 export type Config = {
 	build:  () => Promise<RouterModule> | Promise<RouterModule>,
-	render: (res: JSX.Element, headers: Headers, ctx: GenericContext) => Promise<Response | BodyInit> | Response | BodyInit,
+	render: (res: JSX.Element) => string,
 
 	// dev only
 	viteDevServer: ViteDevServer | null,
@@ -64,8 +64,8 @@ export class HtmxRouterServer {
 
 
 		this.headers = config.headers || new Headers();
-		if (config.poweredBy && !this.headers.has("Powered-By")) this.headers.set("Powered-By", "htmx-router");
-		if (!this.headers.has("Content-Type")) this.headers.set("Content-Type", "text/html");
+		if (config.poweredBy !== false && !this.headers.has("Powered-By")) this.headers.set("X-Powered-By", "htmx-router");
+		if (!this.headers.has("Content-Type")) this.headers.set("Content-Type", "text/html; charset=UTF-8");
 
 		this.#binding = {
 			pre:  [UrlCleaner],

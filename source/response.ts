@@ -78,7 +78,7 @@ export function refresh(init?: ResponseInit & { clientOnly?: boolean }) {
  *
  * @param {Request} request - The incoming HTTP request object
  * @param {Headers} headers - The response headers object to modify
- * @param {string} etag - The current ETag value for the resource
+ * @param {string} etag - The current ETag value for the resource (do not quote)
  * @param {Object} [options] - Optional caching configuration
  * @param {number} [options.revalidate] - client must revalidate their etag at this interval in seconds
  * @param {boolean} [options.public] - cache visibility scope:
@@ -112,6 +112,8 @@ export function refresh(init?: ResponseInit & { clientOnly?: boolean }) {
  *   // This code only runs if client needs updated content
  *   return new Response(generateContent(), { headers });
  * }
+ *
+ * @see {@link https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/ETag | ETag - MDN Web Docs }
  */
 export function AssertETagStale(request: Request, headers: Headers, etag: string, options?: { revalidate?: number, public?: boolean }): void {
 	if (options) {
@@ -123,7 +125,7 @@ export function AssertETagStale(request: Request, headers: Headers, etag: string
 	}
 
 	headers.append("Cache-Control", "must-revalidate");
-	headers.set("ETag", etag);
+	headers.set("ETag", `"${etag}"`);
 
 	const client = request.headers.get("if-none-match");
 	if (client !== etag) return;

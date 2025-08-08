@@ -7,7 +7,7 @@ When it's being created you must give it the request object, and you can optiona
 import { EventSource } from "htmx-router/event-source";
 
 export function loader({ request, render }: RouteContext) {
-  const source = new EventSource<true>({ request, render });
+  const source = new EventSource<true>(request, render);
 
   const timer = setInterval(() => {
     source.dispatch("message", <b>hello everyone</b>);
@@ -20,7 +20,7 @@ export function loader({ request, render }: RouteContext) {
 }
 ```
 
-An `EventSource` will also auto close when the server receives a `SIGTERM` or `SIGTERM` so it can gracefully shutdown.
+An `EventSource` will also auto close when the server receives a `SIGTERM` or `SIGHUP` so it can gracefully shutdown.
 
 There is also a `EventSourceSet` which is designed for pooling streams to send the same live information to multiple connections.
 `EventSource`s will be auto removed from the set if it is closed when a `.dispatch` is issued.

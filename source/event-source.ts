@@ -14,13 +14,8 @@ const headers: ResponseInit["headers"] = {
 	"Connection": "keep-alive",
 }
 
-type DefaultOptions = {
-	request: Request,
-	highWaterMark?: number,
-	keepAlive?: number,
-};
-type RenderOptions = DefaultOptions & { render: Render };
 type Render = (jsx: JSX.Element) => string;
+
 
 /**
  * Helper for Server-Sent-Events, with auto close on SIGTERM and SIGHUP messages
@@ -29,9 +24,8 @@ type Render = (jsx: JSX.Element) => string;
 export class EventSource<JsxEnabled extends boolean = false> {
 	#controller: ReadableStreamDefaultController | null;
 	#signal: AbortSignal;
-	#timer: NodeJS.Timeout | null;
 	#state: number;
-	#render: (jsx: JSX.Element) => string | undefined;
+	#render?: Render;
 
 	readonly response: Response;
 
@@ -53,19 +47,19 @@ export class EventSource<JsxEnabled extends boolean = false> {
 	static OPEN       = 1;
 	static CLOSED     = 2;
 
-	constructor(props: JsxEnabled extends true ? RenderOptions : DefaultOptions) {
+	constructor(request: Request, render: JsxEnabled extends true ? Render : undefined) {
 		this.#controller = null;
 		this.#state = EventSource.CONNECTING;
-		this.#render = (props as RenderOptions)?.render || undefined;
+		this.#render = render;
 
-		this.withCredentials = props.request.mode === "cors";
-		this.url = props.request.url;
+		this.withCredentials = request.mode === "cors";
+		this.url = request.url;
 
 		this.createdAt = Date.now();
 		this.#updatedAt = 0;
 
 		// immediate prepare for abortion
-		this.#signal = props.request.signal;
+		this.#signal = request.signal;
 		const cancel = () => { this.close(); this.#signal.removeEventListener("abort", cancel) };
 		this.#signal.addEventListener('abort', cancel);
 
@@ -74,8 +68,7 @@ export class EventSource<JsxEnabled extends boolean = false> {
 
 		this.response = new Response(stream, { headers });
 
-		this.#timer = setInterval(() => this.#keepAlive(), props.keepAlive || 30_000);
-		register.add(this as EventSource<false>);
+		keepAlive.add(this.#keepAlive);
 	}
 
 	isAborted() { return this.#signal.aborted; }
@@ -131,8 +124,7 @@ export class EventSource<JsxEnabled extends boolean = false> {
 		}
 
 		// Cleanup
-		if (this.#timer) clearInterval(this.#timer);
-		if (unlink) register.delete(this as EventSource<false>);
+		keepAlive.delete(this.#keepAlive);
 
 		// was already closed
 		if (this.#state === EventSource.CLOSED) return false;
@@ -171,16 +163,92 @@ export class EventSourceSet<JsxEnabled extends boolean = false> extends Set<Even
 }
 
 
+type SharedEventSourceCacheRule = { limit: number, ttl: number }
+	| { limit?: number, ttl:  number }
+	| { limit:  number, ttl?: number };
+
+/**
+ * DO NOT USE: Experimental
+ * @deprecated
+ */
+export class SharedEventSource<JsxEnabled extends boolean = false> {
+	#pool: EventSourceSet<JsxEnabled>;
+	#render?: Render;
+
+	#cache: Record<string, { t: number, s: string }[]>;
+	#rules: Record<string, SharedEventSourceCacheRule>;
+
+	constructor (props: {
+		cache?: Record<string, SharedEventSourceCacheRule>;
+	} & (JsxEnabled extends true ? { render: Render } : {})) {
+		this.#pool          = new EventSourceSet<JsxEnabled>();
+
+		this.#render = (props as { render: Render })?.render || undefined;
+
+		this.#cache = {};
+		this.#rules = {};
+	}
+
+	create (request: Request) {
+		const source = new EventSource<JsxEnabled>(request, this.#render as any);
+
+		const buffer = [];
+		for (const name in this.#cache) buffer.push(...this.#cache[name].map(x => ({ t: name, x })));
+
+		buffer.sort((a,b) => b.x.t - a.x.t);
+		for (const e of buffer) source.dispatch(e.t, e.x.s);
+
+		return source;
+	}
+
+	dispatch(type: string, data: JsxEnabled extends true ? (JSX.Element | string) : string) {
+		let html: string;
+		if (typeof data === "string") html = data;
+		else {
+			if (!this.#render) throw new Error(`Cannot render to JSX when no renderer provided during class initialization`);
+			html = this.#render(data);
+		}
+
+		this.#pool.dispatch(type, html);
+
+		// Cache management
+		const rule = this.#rules[type];
+		if (!rule) return;
+		const t = Date.now();
+		this.#cache[type] ||= [];
+
+		const queue = this.#cache[type];
+		queue.push({ t, s: html });
+
+		// Purge Cache
+		let i = rule.limit ? Math.max(0, queue.length - rule.limit) : 0;
+		if (rule.ttl) {
+			const window = t - rule.ttl;
+			for (; i<queue.length; i++) if (queue[i].t > window) break;
+		}
+
+		this.#cache[type] = queue.slice(i);
+	}
+
+	isEmpty () {
+		return this.#pool.size < 1;
+	}
+
+	close () { this.#pool.closeAll(); }
+}
 
 
 
 // Auto close all SSE streams when shutdown requested
 // Without this graceful shutdowns will hang indefinitely
-const register = new EventSourceSet();
-function CloseAll() {
-	register.closeAll();
-}
+const keepAlive = new Set<() => void>();
+const interval = setInterval(() => {
+	for (const e of keepAlive) e();
+}, 30_000);
+
+
+function Shutdown () { clearInterval(interval); }
 if (process) {
-	process.on('SIGTERM', CloseAll);
-	process.on('SIGTERM', CloseAll);
+	process.on('SIGTERM', Shutdown);
+	process.on('SIGHUP',  Shutdown);
 }

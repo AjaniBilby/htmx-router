@@ -231,7 +231,7 @@ class RouteLeaf {
 		if (jsx === null) return null;
 		if (jsx instanceof Response) return jsx;
 
-		const res = await ctx.render(jsx, ctx.headers, ctx);
+		const res = await ctx.render(jsx);
 		if (res instanceof Response) return res;
 
 		return html(res, { headers: ctx.headers });
@@ -243,7 +243,7 @@ class RouteLeaf {
 		let jsx = await this.module.error(ctx.shape({}, this.path), e);
 
 		const caught = jsx instanceof Response ? jsx
-			: await ctx.render(jsx, ctx.headers, ctx);
+			: await ctx.render(jsx);
 
 		if (caught instanceof Response) {
 			caught.headers.set("X-Caught", "true");

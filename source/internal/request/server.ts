@@ -10,6 +10,7 @@ import { RouterModule } from "./index.js";
 import { NodeAdaptor } from "./compatibility/node.js";
 import { MakeStatus } from "../../status.js";
 import { RouteTree } from "../../router.js";
+import { redirect } from "../../response.js";
 
 export type Config = {
 	build:  () => Promise<RouterModule> | Promise<RouterModule>,
@@ -18,12 +19,16 @@ export type Config = {
 	// dev only
 	viteDevServer: ViteDevServer | null,
 
+	headers?: Headers, // default headers used for all requests
+
 	poweredBy?: boolean
-	timers?: boolean /// enable or disable X-Time headers
+	timers?: boolean // enable or disable X-Time headers
 };
 
 type ServerBindType = "pre" | "post";
 type ServerBind = (ctx: GenericContext) => Promise<Response | null> | Response | null;
+
+type Transformer = (ctx: GenericContext, res: Response) => Promise<Response | void> | Response | void;
 
 
 function UrlCleaner({ url }: GenericContext) {
@@ -32,9 +37,8 @@ function UrlCleaner({ url }: GenericContext) {
 	if (i !== url.pathname.length-1) return null;
 
 	url.pathname = url.pathname.slice(0, -1);
-	return new Response("", MakeStatus("Permanent Redirect", {
-		headers: { location: url.toString() }
-	}));
+
+	return redirect(url.toString(), { permanent: true });
 }
 
 
@@ -42,28 +46,31 @@ export class HtmxRouterServer {
 	readonly vite:   Config["viteDevServer"];
 	readonly render: Config["render"];
 	readonly build:  Config["build"];
-	readonly poweredBy: boolean;
+	readonly headers:   Headers;
 	readonly timers: boolean;
 
 	#binding: {
-		pre:  Array<ServerBind>,
-		post: Array<ServerBind>
+		pre:       Array<ServerBind>,
+		post:      Array<ServerBind>,
+		transform: Array<Transformer>,
 	}
 
 	constructor (config: Config) {
 		this.vite = config.viteDevServer;
 
-		this.poweredBy = config.poweredBy === undefined ? true : config.poweredBy;
 		this.timers = config.timers === undefined ? !!config.viteDevServer : config.timers;
-		this.render = function(res, header, ctx) {
-			ctx.timer.checkpoint("render");
-			return config.render(res, header, ctx);
-		};
+		this.render = config.render;
 		this.build = config.build;
+
+
+		this.headers = config.headers || new Headers();
+		if (config.poweredBy && !this.headers.has("Powered-By")) this.headers.set("Powered-By", "htmx-router");
+		if (!this.headers.has("Content-Type")) this.headers.set("Content-Type", "text/html");
 
 		this.#binding = {
 			pre:  [UrlCleaner],
-			post: []
+			post: [],
+			transform: []
 		}
 
 		if (this.vite) {
@@ -90,24 +97,48 @@ export class HtmxRouterServer {
 		throw new Error(`Unknown binding type "${type}"`);
 	}
 
+	/**
+	 * Be careful with your transformers, there is no error unwrapping built in
+	 * @param binding
+	 * @returns
+	 */
+	useTransform(binding: Transformer) {
+		this.#binding.transform.push(binding);
+		return;
+	}
+
+	async transform(ctx: GenericContext, res: Response) {
+		if (this.#binding.transform.length < 0) return res;
+
+		ctx.timer.checkpoint("transform");
+		for (const process of this.#binding.transform) {
+			const next = process(ctx, res);
+			if (next instanceof Response) res = next;
+		}
+
+		ctx.finalize(res);
+
+		return res;
+	}
+
 	async resolve<T extends boolean> (request: Request, resolve404: T = true as T): Promise<T extends true ? Response : (Response | null)> {
 		const url = new URL(request.url);
 		const ctx = new GenericContext(request, url, this);
 
 		{ // pre-binding
 			const res = await this.#applyBindings("pre", ctx);
-			if (res) return ctx.finalize(res);
+			if (res) return await this.transform(ctx, res);
 		}
 
-		const tree = await this.#getTree();
 		{ // route
+			const tree = await this.#getTree();
 			const res = await this.#resolveRoute(ctx, tree);
-			if (res) return ctx.finalize(res);
+			if (res) return await this.transform(ctx, res);
 		}
 
 		{ // post-binding
 			const res = await this.#applyBindings("post", ctx);
-			if (res) return ctx.finalize(res);
+			if (res) return await this.transform(ctx, res);
 		}
 
 		if (resolve404) return await this.error(ctx, undefined);
@@ -128,7 +159,7 @@ export class HtmxRouterServer {
 		const tree = await this.#getTree();
 
 		const res = await tree.unwrap(ctx, e);
-		return ctx.finalize(res);
+		return await this.transform(ctx, res);
 	}
 
 	/**

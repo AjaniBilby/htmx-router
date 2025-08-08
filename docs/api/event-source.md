@@ -6,11 +6,11 @@ When it's being created you must give it the request object, and you can optiona
 ```ts
 import { EventSource } from "htmx-router/event-source";
 
-export function loader({ request }: RouteContext) {
-  const source = new EventSource(request);
+export function loader({ request, render }: RouteContext) {
+  const source = new EventSource<true>({ request, render });
 
   const timer = setInterval(() => {
-    source.dispatch("message", "hello, world every 10sec");
+    source.dispatch("message", <b>hello everyone</b>);
     if (source.readyState === 2) { // the source has been closed
       clearInterval(timer);
     }

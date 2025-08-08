@@ -4,6 +4,7 @@ bin/*
 *.tgz
 
 site/*
+dist/*
 
 *.d.ts
 *.js

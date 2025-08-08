@@ -3,6 +3,7 @@
 Finally you just need something to actually give the router http requests, this can be in the form of a [`http.IncomingMessage`](https://nodejs.org/api/http.html#class-httpincomingmessage) or a [`Request`](https://developer.mozilla.org/en-US/docs/Web/API/Request) object for the router to process.
 
 ```js title="server.js"
+import { renderToString } from 'react-dom/server';
 import express from 'express';
 
 
@@ -30,7 +31,7 @@ const build = viteDevServer
 import { createHtmxServer } from 'htmx-router/server';
 const htmx = createHtmxServer({
   build, viteDevServer,
-  render { /* (1) */ }
+  render: renderToString /* (1) */
 });
 
 // bind to htmx-router
@@ -43,7 +44,7 @@ app.listen(port, () => {
 });
 ```
 
-1.  Defined later in [rendering](./rendering.md)
+1.  Any function that takes a `JSX.Element` and returns a `string` will suffice
 
 If you aren't using express, and say using something more like deno's native http server you would use `createRequestHandler.native` instead:
 ```js

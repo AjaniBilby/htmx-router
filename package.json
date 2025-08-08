@@ -1,6 +1,6 @@
 {
 	"name": "htmx-router",
-	"version": "2.0.6",
+	"version": "2.1.0",
 	"description": "A lightweight SSR framework with server+client islands",
 	"keywords": [ "htmx", "router", "client islands", "ssr", "vite" ],
 	"type": "module",
@@ -9,25 +9,25 @@
 	},
 	"main": "./index.js",
 	"exports": {
-		".":              "./index.js",
-		"./cookies":      "./cookies.js",
-		"./css":          "./css.js",
-		"./defer":        "./defer.js",
-		"./endpoint":     "./endpoint.js",
-		"./event-source": "./event-source.js",
-		"./navigate":     "./navigate.js",
-		"./response":     "./response.js",
-		"./router":       "./router.js",
-		"./server":       "./server.js",
-		"./shell":        "./shell.js",
-		"./status":       "./status.js",
-		"./timer":        "./timer.js",
-		"./vite":         "./vite/index.js",
+		".":              "./dist/index.js",
+		"./cookies":      "./dist/cookies.js",
+		"./css":          "./dist/css.js",
+		"./defer":        "./dist/defer.js",
+		"./endpoint":     "./dist/endpoint.js",
+		"./event-source": "./dist/event-source.js",
+		"./navigate":     "./dist/navigate.js",
+		"./response":     "./dist/response.js",
+		"./router":       "./dist/router.js",
+		"./server":       "./dist/server.js",
+		"./shell":        "./dist/shell.js",
+		"./status":       "./dist/status.js",
+		"./timer":        "./dist/timer.js",
+		"./vite":         "./dist/vite/index.js",
 
-		"./util/parameters": "./util/parameters.js",
+		"./util/parameters": "./dist/util/parameters.js",
 
-		"./internal/client": "./internal/client.js",
-		"./internal/mount":  "./internal/mount.js"
+		"./internal/client": "./dist/internal/client.js",
+		"./internal/mount":  "./dist/internal/mount.js"
 	},
 	"bin": {
 		"htmx-router": "cli/index.js"

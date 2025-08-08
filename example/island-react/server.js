@@ -30,12 +30,8 @@ const build = viteDevServer
 
 const htmx = createHtmxServer({
 	build, viteDevServer,
-	render: (jsx, headers) => {
-		headers.set("Content-Type", "text/html; charset=UTF-8");
-
-		const stream = renderToString(jsx);
-		return new Response(stream, { headers });
-	}
+	render: renderToString,
+	headers: new Headers()
 });
 
 app.use('*', htmx.nodeAdaptor(true));

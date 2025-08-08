@@ -108,7 +108,7 @@ export class HtmxRouterServer {
 	}
 
 	async transform(ctx: GenericContext, res: Response) {
-		if (this.#binding.transform.length < 0) return res;
+		if (this.#binding.transform.length < 1) return res;
 
 		ctx.timer.checkpoint("transform");
 		for (const process of this.#binding.transform) {

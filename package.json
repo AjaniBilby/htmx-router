@@ -7,7 +7,7 @@
 	"scripts": {
 		"build": "tsc"
 	},
-	"main": "./index.js",
+	"main": "./dist/index.js",
 	"exports": {
 		".":              "./dist/index.js",
 		"./cookies":      "./dist/cookies.js",
@@ -30,7 +30,7 @@
 		"./internal/mount":  "./dist/internal/mount.js"
 	},
 	"bin": {
-		"htmx-router": "cli/index.js"
+		"htmx-router": "dist/cli/index.js"
 	},
 	"repository": {
 		"type": "git",

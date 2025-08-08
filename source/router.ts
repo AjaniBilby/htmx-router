@@ -231,7 +231,6 @@ class RouteLeaf {
 		if (jsx === null) return null;
 		if (jsx instanceof Response) return jsx;
 
-		ctx.timer.checkpoint("render");
 		const res = ctx.render(jsx);
 		return html(res, { headers: ctx.headers });
 	}
@@ -243,10 +242,7 @@ class RouteLeaf {
 
 		let caught: Response | string;
 		if (jsx instanceof Response) caught = jsx;
-		else {
-			ctx.timer.checkpoint("render");
-			caught = ctx.render(jsx);
-		}
+		else caught = ctx.render(jsx);
 
 		if (caught instanceof Response) {
 			caught.headers.set("X-Caught", "true");

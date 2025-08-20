@@ -84,23 +84,23 @@ for (const k in dictionary) {
 	index.text.set(code, text);
 }
 
-
-export function MakeStatus(lookup: StatusCode | StatusText, init?: ResponseInit | Headers): ResponseInit {
+type ResponseConfig = ResponseInit & { status: number, statusText: string };
+export function MakeStatus(lookup: StatusCode | StatusText, init?: ResponseInit | Headers): ResponseConfig {
 	if (init instanceof Headers) init = { headers: init };
 
 	if (typeof lookup === "number") return lookupCode(lookup, init);
 	return lookupStatus(lookup, init);
 }
 
-function lookupCode(code: StatusCode, init?: ResponseInit): ResponseInit {
+function lookupCode(code: StatusCode, init?: ResponseInit) {
 	const text = index.text.get(code);
 	if (text === undefined) throw new TypeError(`Status ${code} is not a known status code`);
-	return SetStatus(init, code, text);
+	return SetStatus(init, code, text) as ResponseConfig;
 }
-function lookupStatus(text: StatusText, init?: ResponseInit): ResponseInit {
+function lookupStatus(text: StatusText, init?: ResponseInit) {
 	const code = index.code.get(text.toLowerCase());
 	if (code === undefined) throw new TypeError(`Status "${text}" is not a known status text`);
-	return SetStatus(init, code, text);
+	return SetStatus(init, code, text) as ResponseConfig;
 }
 
 function SetStatus(into: ResponseInit = {}, status: number, statusText: string) {

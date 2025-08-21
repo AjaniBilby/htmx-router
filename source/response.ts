@@ -1,4 +1,8 @@
-export function text(text: BodyInit, init?: ResponseInit) {
+// Prevent deno from confusing this with globalThis.ResponseInit which doesn't include a header object
+type ResponseInit = NonNullable<ConstructorParameters<typeof Response>[1]>;
+
+
+export function text(text: BodyInit, init?: ResponseInit): Response {
 	init = FillResponseInit(200, "Ok", init);
 
 	const res = new Response(text, init);
@@ -8,7 +12,7 @@ export function text(text: BodyInit, init?: ResponseInit) {
 	return res;
 }
 
-export function html(text: BodyInit, init?: ResponseInit) {
+export function html(text: BodyInit, init?: ResponseInit): Response {
 	init = FillResponseInit(200, "Ok", init);
 
 	const res = new Response(text, init);
@@ -30,7 +34,7 @@ export function json<T>(data: T, init?: ResponseInit): TypedResponse<T> {
 	return res;
 }
 
-export function redirect(url: string, init?: ResponseInit & { clientOnly?: boolean, permanent?: boolean }) {
+export function redirect(url: string, init?: ResponseInit & { clientOnly?: boolean, permanent?: boolean }): Response {
 	if (init?.permanent) init = FillResponseInit(308, "Permanent Redirect", init);
 	else init = FillResponseInit(307, "Temporary Redirect", init);
 
@@ -42,7 +46,7 @@ export function redirect(url: string, init?: ResponseInit & { clientOnly?: boole
 	return res;
 }
 
-export function revalidate(init?: ResponseInit) {
+export function revalidate(init?: ResponseInit): Response {
 	init = FillResponseInit(200, "Ok", init);
 
 	const res = new Response("", init);
@@ -53,7 +57,7 @@ export function revalidate(init?: ResponseInit) {
 	return res;
 }
 
-export function refresh(init?: ResponseInit & { clientOnly?: boolean }) {
+export function refresh(init?: ResponseInit & { clientOnly?: boolean }): Response {
 	init = FillResponseInit(200, "Ok", init);
 
 	if (init.clientOnly) {
@@ -77,7 +81,7 @@ export function refresh(init?: ResponseInit & { clientOnly?: boolean }) {
  * Acts like an assertion that stops execution when the client's ETag matches the current ETag.
  *
  * @param {Request} request - The incoming HTTP request object
- * @param {Headers} headers - The response headers object to modify
+ * @param {Headers} headers - The output response headers object to modify
  * @param {string} etag - The current ETag value for the resource (do not quote)
  * @param {Object} [options] - Optional caching configuration
  * @param {number} [options.revalidate] - client must revalidate their etag at this interval in seconds

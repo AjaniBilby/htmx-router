@@ -28,7 +28,7 @@ export class Style {
 		cache = null;
 	}
 
-	toString() {
+	toString(): string {
 		return this.name;
 	}
 }
@@ -62,10 +62,7 @@ export function GetSheetUrl() {
  * RouteTree mounting point
  */
 export const path = "/_/style/$hash";
-
-export const parameters = {
-	hash: String
-}
+export const parameters = { hash: String }
 
 export async function loader(ctx: RouteContext<typeof parameters>) {
 	const build = GetSheet();

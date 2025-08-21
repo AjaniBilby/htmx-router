@@ -107,7 +107,7 @@ export class RouteTree {
 		this.slug = null;
 	}
 
-	ingest(node: RouteLeaf, path?: string[]) {
+	ingest(node: RouteLeaf, path?: string[]): void {
 		if (!path) path = node.path.length === 0 ? [] : node.path.slice(1).split("/");
 
 		if (path.length === 0) {
@@ -211,7 +211,7 @@ export class RouteTree {
 		AssertUnreachable(res);
 	}
 
-	unwrap(ctx: GenericContext, res: unknown) {
+	unwrap(ctx: GenericContext, res: unknown): Promise<Response> {
 		if (!this.slug) throw res;
 		return this.slug.error(ctx, res);
 	}
@@ -226,7 +226,7 @@ class RouteLeaf {
 		this.path = path;
 	}
 
-	async resolve(ctx: GenericContext) {
+	async resolve(ctx: GenericContext): Promise<Response | null> {
 		const jsx = await this.response(ctx);
 		if (jsx === null) return null;
 		if (jsx instanceof Response) return jsx;
@@ -235,7 +235,7 @@ class RouteLeaf {
 		return html(res, { headers: ctx.headers });
 	}
 
-	async error(ctx: GenericContext, e: unknown) {
+	async error(ctx: GenericContext, e: unknown): Promise<Response> {
 		if (!this.module.error) throw e;
 
 		const jsx = await this.module.error(ctx.shape({}, this.path), e);
@@ -253,7 +253,7 @@ class RouteLeaf {
 		return html(caught, e instanceof Response ? e : MakeStatus("Internal Server Error", ctx.headers));
 	}
 
-	private async response(ctx: GenericContext) {
+	private async response(ctx: GenericContext): Promise<JSX.Element | null> {
 		try {
 			if (!this.module.loader && !this.module.action) return null;
 

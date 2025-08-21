@@ -12,8 +12,11 @@
  */
 export class RequestTimer {
 	#checkpoints: Checkpoint[] | null;
+	#start: number;
 
 	constructor (enabled: boolean) {
+		this.#start = Date.now();
+
 		if (!enabled) {
 			this.#checkpoints = null;
 			return;
@@ -83,6 +86,10 @@ export class RequestTimer {
 	 * It will clear all timers for the request, and ensure they aren't included in the response
 	 */
 	disable() { this.#checkpoints = null; }
+
+	getElapsed(): number {
+		return Date.now() - this.#start;
+	}
 }
 
 class Checkpoint {

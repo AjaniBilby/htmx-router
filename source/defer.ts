@@ -19,7 +19,7 @@ function MakeIdentity(func: Function) {
 	return { name, url };
 }
 
-export function RegisterDeferral<T extends ParameterShaper>(shape: T, func: RenderFunction<T>, converter?: Parameterizer<T>) {
+export function RegisterDeferral<T extends ParameterShaper>(shape: T, func: RenderFunction<T>, converter?: Parameterizer<T>): string {
 	const existing = index.get(func);
 	if (existing) return existing.url;
 
@@ -69,10 +69,7 @@ export function Deferral<T extends ParameterShaper>(func: RenderFunction<T>, par
  * RouteTree mounting point
  */
 export const path = "/_/defer/$";
-
-export const parameters = {
-	"$": String
-}
+export const parameters = { "$": String }
 
 export async function loader(ctx: RouteContext<typeof parameters>) {
 	const endpoint = registry.get(ctx.params["$"]);

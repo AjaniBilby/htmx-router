@@ -1,5 +1,4 @@
-// Prevent deno from confusing this with globalThis.ResponseInit which doesn't include a header object
-type ResponseInit = NonNullable<ConstructorParameters<typeof Response>[1]>;
+import { ResponseInit } from "./util/types";
 
 
 export function text(text: BodyInit, init?: ResponseInit): Response {

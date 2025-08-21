@@ -41,7 +41,7 @@ export class Cookies {
 		if (typeof this.source === "string") this.source = null;
 	}
 
-	get(name: string) {
+	get(name: string): string | null {
 		this.parse();
 		return this.map[name] || null;
 	}
@@ -58,12 +58,12 @@ export class Cookies {
 		}
 	}
 
-	has(name: string) {
+	has(name: string): boolean {
 		this.parse();
 		return name in this.map;
 	}
 
-	set(name: string, value: string, options: CookieOptions = {}) {
+	set(name: string, value: string, options: CookieOptions = {}): void {
 		this.parse();
 		options.path ||= "/";
 
@@ -75,19 +75,19 @@ export class Cookies {
 		}
 	}
 
-	private string(name: string) {
+	private string(name: string): string {
 		return encodeURIComponent(name)+"="+encodeURIComponent(this.map[name])+StringifyOptions(this.config[name]);;
 	}
 
-	unset(name: string, options: CookieOptions = { maxAge: -1 }) {
+	unset(name: string, options: CookieOptions = { maxAge: -1 }): void {
 		options.maxAge ||= -1;
 
 		this.parse();
-		return this.set(name, "", options);
+		this.set(name, "", options);
 	}
 
 	/** Creates the response headers required to make the changes done to these cookies */
-	export() {
+	export(): Array<string> {
 		const headers = new Array<string>();
 		for (const name in this.config) headers.push(this.string(name));
 		return headers;

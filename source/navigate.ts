@@ -6,7 +6,7 @@ interface HTMX {
 	process: (element: HTMLElement) => void;
 }
 
-function htmx() {
+function htmx(): HTMX {
 	const htmx = (window as unknown as { htmx?: HTMX }).htmx;
 	if (typeof htmx !== "object") throw new Error("Missing htmx");
 
@@ -15,7 +15,7 @@ function htmx() {
 
 
 const driver = (typeof document === "object" ? document.createElement("a") : null)!;
-export function htmxNavigate(href: string = "", pushHistory = true) {
+export function htmxNavigate(href: string = "", pushHistory = true): void {
 	if (typeof window !== "object") return;
 	if (!driver) return;
 
@@ -44,16 +44,16 @@ export function htmxNavigate(href: string = "", pushHistory = true) {
 /**
  * @deprecated - use htmxNavigate() instead
  */
-export const navigate = htmxNavigate()
+export const navigate = htmxNavigate();
 
 /**
  * @deprecated - use navigate() instead
  */
-export function revalidate() {
+export function revalidate(): void {
 	return htmxNavigate("", false);
 }
 
-export async function htmxAppend(href: string, verb = "GET") {
+export async function htmxAppend(href: string, verb = "GET"): Promise<void> {
 	await htmx().ajax(verb, href, {
 		target: 'body',
 		swap:   'beforeend'

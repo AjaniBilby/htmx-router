@@ -2,7 +2,7 @@ import { ServerOnlyWarning } from "./internal/util.js";
 ServerOnlyWarning("shell");
 
 export type ShellOptions<D = {}> = D & MetaDescriptor;
-export function ApplyMetaDefaults(options: ShellOptions, defaults: Readonly<Partial<ShellOptions>>) {
+export function ApplyMetaDefaults(options: ShellOptions, defaults: Readonly<Partial<ShellOptions>>): void {
 	if (defaults.title       && !options.title)       options.title       = defaults.title;
 	if (defaults.description && !options.description) options.description = defaults.description;
 
@@ -21,7 +21,7 @@ export type MetaDescriptor = {
 	jsonLD?: LdJsonObject[];
 }
 
-export function RenderMetaDescriptor<T>(options: ShellOptions<T>) {
+export function RenderMetaDescriptor<T>(options: ShellOptions<T>): string {
 	let out = "";
 
 	if (options.title) out += `<title>${EscapeHTML(options.title)}</title>`;
@@ -52,7 +52,7 @@ export function RenderMetaDescriptor<T>(options: ShellOptions<T>) {
 }
 
 
-function RenderOpenGraph<T extends string>(og: OpenGraph<T>) {
+function RenderOpenGraph<T extends string>(og: OpenGraph<T>): string {
 	// Manually encoding everything rather than using a loop to ensure they are in the correct order
 	// And to ensure extra values can't leak in creating unsafe og tags
 
@@ -100,11 +100,11 @@ function RenderOpenGraph<T extends string>(og: OpenGraph<T>) {
 	return out + RenderOpenGraphExtras(og);
 }
 
-function RenderProperty(name: string, value: string) {
+function RenderProperty(name: string, value: string): string {
 	return `<meta property="${name}" content="${EscapeHTML(value)}">\n`
 }
 
-function RenderOpenGraphExtras<T extends OpenGraphType>(og: OpenGraph<T>) {
+function RenderOpenGraphExtras<T extends OpenGraphType>(og: OpenGraph<T>): string {
 	let out = "";
 
 	if (og.type === "music.song") {
@@ -222,7 +222,7 @@ const escapeTo = {
 	"'":  "&#39;",
 }
 
-function EscapeHTML(str: string) {
+function EscapeHTML(str: string): string {
 	return str.replace(/[&<>"']/g, (match) => escapeTo[match as keyof typeof escapeTo] || match);
 }
 

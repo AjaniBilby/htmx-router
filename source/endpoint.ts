@@ -35,9 +35,7 @@ export class Endpoint {
  */
 export const path = "/_/endpoint/$";
 
-export const parameters = {
-	"$": String
-}
+export const parameters = { "$": String }
 
 export async function loader(ctx: RouteContext<typeof parameters>) {
 	const endpoint = registry.get(ctx.params["$"]);

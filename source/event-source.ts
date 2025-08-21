@@ -71,9 +71,9 @@ export class EventSource<JsxEnabled extends boolean = false> {
 		keepAlive.add(this as EventSource<false>);
 	}
 
-	isAborted() { return this.#signal.aborted; }
+	isAborted(): boolean { return this.#signal.aborted; }
 
-	#sendBytes(chunk: Uint8Array, active: boolean) {
+	#sendBytes(chunk: Uint8Array, active: boolean): boolean {
 		if (this.#state === EventSource.CLOSED) {
 			const err = new Error(`Warn: Attempted to send data on closed stream for: ${this.url}`);
 			console.warn(err);
@@ -97,7 +97,7 @@ export class EventSource<JsxEnabled extends boolean = false> {
 		}
 	}
 
-	#sendText(chunk: string, simulated: boolean) {
+	#sendText(chunk: string, simulated: boolean): boolean {
 		return this.#sendBytes(encoder.encode(chunk), simulated);
 	}
 
@@ -105,11 +105,11 @@ export class EventSource<JsxEnabled extends boolean = false> {
 	 * For internal use only
 	 * @deprecated
 	 */
-	_keepAlive() {
+	_keepAlive(): boolean {
 		return this.#sendText("\n\n", false);
 	}
 
-	dispatch(type: string, data: JsxEnabled extends true ? (JSX.Element | string) : string) {
+	dispatch(type: string, data: JsxEnabled extends true ? (JSX.Element | string) : string): boolean {
 		let html;
 		if (typeof data === "string") html = data;
 		else {
@@ -120,7 +120,7 @@ export class EventSource<JsxEnabled extends boolean = false> {
 		return this.#sendText(`event: ${type}\ndata: ${html}\n\n`, true);
 	}
 
-	close (unlink = true) {
+	close (): boolean {
 		if (this.#controller) {
 			try { this.#controller.close(); }
 			catch (e) { console.error(e); }
@@ -141,28 +141,46 @@ export class EventSource<JsxEnabled extends boolean = false> {
 }
 
 export class EventSourceSet<JsxEnabled extends boolean = false> extends Set<EventSource<JsxEnabled>> {
-	/** Send update to all EventSources, auto closing failed dispatches */
-	dispatch(type: string, data: string) {
+	/**
+	 * Send update to all EventSources, auto closing failed dispatches
+	 * @returns number of successful sends
+	 */
+	dispatch(type: string, data: string): number {
+		let count = 0;
 		for (const stream of this) {
 			if (stream.readyState === 0) continue; // skip initializing
 
 			const success = stream.dispatch(type, data);
-			if (!success) this.delete(stream);
+			if (success) count++
+			else this.delete(stream);
 		}
+
+		return count
 	}
 
-	/** Cull all closed connections */
-	cull() {
+	/**
+	 * Cull all closed connections
+	 * @returns number of connections closed
+	 */
+	cull(): number {
+		const count = this.size;
 		for (const stream of this) {
 			if (stream.readyState !== 2) continue;
 			this.delete(stream);
 		}
+
+		return count;
 	}
 
-	/** Close all connections */
-	closeAll() {
+	/**
+	 * Close all connections
+	 * @returns number of connections closed
+	 */
+	closeAll(): number {
+		const count = this.size;
 		for (const stream of this) stream.close();
 		this.clear();
+		return count;
 	}
 }
 
@@ -193,7 +211,7 @@ export class SharedEventSource<JsxEnabled extends boolean = false> {
 		this.#rules = {};
 	}
 
-	create (request: Request) {
+	create (request: Request): EventSource<JsxEnabled> {
 		const source = new EventSource<JsxEnabled>(request, this.#render as any);
 
 		const buffer = [];
@@ -205,7 +223,7 @@ export class SharedEventSource<JsxEnabled extends boolean = false> {
 		return source;
 	}
 
-	dispatch(type: string, data: JsxEnabled extends true ? (JSX.Element | string) : string) {
+	dispatch(type: string, data: JsxEnabled extends true ? (JSX.Element | string) : string): void {
 		let html: string;
 		if (typeof data === "string") html = data;
 		else {
@@ -234,11 +252,11 @@ export class SharedEventSource<JsxEnabled extends boolean = false> {
 		this.#cache[type] = queue.slice(i);
 	}
 
-	isEmpty () {
+	isEmpty (): boolean {
 		return this.#pool.size < 1;
 	}
 
-	close () { this.#pool.closeAll(); }
+	close (): void { this.#pool.closeAll(); }
 }
 
 

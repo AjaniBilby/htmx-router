@@ -3,7 +3,9 @@ import { GetMountUrl } from 'htmx-router/internal/mount';
 import { GetSheetUrl } from 'htmx-router/css';
 
 let cache: JSX.Element | null = null;
-const clientEntry = await GetClientEntryURL();
+const clientEntry = import.meta.env.DEV
+	? "/app/entry.client.ts"
+	: await GetClientEntryURL();
 export function Scripts() {
 	if (cache) return cache;
 

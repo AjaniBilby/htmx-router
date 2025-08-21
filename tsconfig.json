@@ -11,6 +11,8 @@
 		"moduleResolution": "Node",
 		"esModuleInterop": true,
 
+		"types": ["vite/client", "./global.d.ts"],
+
 		/* Generates corresponding '.d.ts' file. */
 		"declaration": true,
 

@@ -2,8 +2,4 @@
 
 !package.json
 !readme.md
-!**/*.d.ts
-!**/*.js
-
-/example/*
-/site/*
+!/dist/**

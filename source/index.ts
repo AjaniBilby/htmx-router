@@ -1,4 +1,5 @@
 import type { ParameterShaper } from "./util/parameters.js";
+import type { GenericContext } from "./internal/router.js";
 import type { RouteContext } from "./router.js";
 
 export type RenderFunction<T extends ParameterShaper = {}> = (ctx: RouteContext<T>) => Promise<Response | JSX.Element | null>;
@@ -20,4 +21,4 @@ type ClientIsland<T> = T extends (props: infer P) => JSX.Element
 	: T;
 
 
-export { RouteContext };
+export { RouteContext, GenericContext };

@@ -128,20 +128,33 @@ export function AssertETagStale(request: Request, headers: Headers, etag: string
 
 		if (options.revalidate !== undefined) headers.append("Cache-Control", `max-age=${options.revalidate}`);
 	}
-
 	headers.append("Cache-Control", "must-revalidate");
-	headers.set("ETag", `"${encodeURIComponent(etag.trim())}"`);
 
-	const client = request.headers.get("if-none-match");
-	if (client !== etag) return;
+	etag = encodeURIComponent(etag.trim()); // safely handle any special characters
+	headers.set("ETag", `"${etag}"`);
 
-	const res = new Response(null, {
-		status: 304, statusText: "Not Modified",
-		headers
-	});
+	const rules = request.headers.get("if-none-match");
+	if (!rules || !MatchEtags(rules.trim(), etag)) return;
+
+	const res = new Response(null, { headers, status: 304, statusText: "Not Modified" });
 	res.headers.set("X-Caught", "true");
 
 	throw res;
+}
+
+function MatchEtags(header: string, etag: string): boolean {
+	if (header === "*") return true;
+
+	for (const term of header.split(/,\s*/)) {
+		let s = term.startsWith('W/') ? 'W/'.length : 0;
+		let e = term.endsWith('"') ? term.length-1 : term.length;
+		if (term.startsWith('"', s)) s++;
+
+		const tag = term.slice(s, e);
+		if (etag === tag) return true;
+	}
+
+	return false;
 }
 
 

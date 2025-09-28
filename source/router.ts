@@ -143,21 +143,23 @@ export class RouteTree {
 		next.ingest(node, path.slice(1));
 	}
 
-	async resolve(fragments: string[], ctx: GenericContext): Promise<Response | null> {
-		if (!this.slug) return await this._resolve(fragments, ctx);
+	async resolve(fragments: string[], ctx: GenericContext, offset: number): Promise<Response | null> {
+		if (!this.slug) return await this._resolve(fragments, ctx, offset);
 
 		try {
-			return await this._resolve(fragments, ctx);
+			return await this._resolve(fragments, ctx, offset);
 		} catch (e) {
 			return this.unwrap(ctx, e);
 		}
 	}
 
-	private async _resolve(fragments: string[], ctx: GenericContext): Promise<Response | null> {
-		let res = await this.resolveIndex(fragments, ctx)
-			|| await this.resolveNext(fragments, ctx)
-			|| await this.resolveWild(fragments, ctx)
-			|| await this.resolveSlug(fragments, ctx);
+	private async _resolve(fragments: string[], ctx: GenericContext, offset: number): Promise<Response | null> {
+		let res = (fragments.length - offset < 1
+				? await this.resolveIndex(fragments, ctx, offset)
+				: await this.resolveNext(fragments, ctx, offset)
+			)
+			|| await this.resolveWild(fragments, ctx, offset)
+			|| await this.resolveSlug(fragments, ctx, offset);
 
 		if (res instanceof Response) {
 			if (res.ok) return res;
@@ -170,8 +172,7 @@ export class RouteTree {
 		return res;
 	}
 
-	private async resolveIndex(fragments: string[], ctx: GenericContext): Promise<Response | null> {
-		if (fragments.length > 0) return null;
+	private async resolveIndex(fragments: string[], ctx: GenericContext, offset: number): Promise<Response | null> {
 		if (!this.index) return null;
 
 		const res = await this.index.resolve(ctx);
@@ -181,28 +182,25 @@ export class RouteTree {
 		AssertUnreachable(res);
 	}
 
-	private async resolveNext(fragments: string[], ctx: GenericContext): Promise<Response | null> {
-		if (fragments.length < 1) return null;
-
-
-		const next = this.nested.get(fragments[0]);
+	private async resolveNext(fragments: string[], ctx: GenericContext, offset: number): Promise<Response | null> {
+		const next = this.nested.get(fragments[offset]);
 		if (!next) return null;
 
-		return await next.resolve(fragments.slice(1), ctx);
+		return await next.resolve(fragments, ctx, offset+1);
 	}
 
-	private async resolveWild(fragments: string[], ctx: GenericContext): Promise<Response | null> {
+	private async resolveWild(fragments: string[], ctx: GenericContext, offset: number): Promise<Response | null> {
 		if (!this.wild) return null;
 		if (fragments.length < 1) return null;
 
-		ctx.params[this.wildCard] = fragments[0];
-		return this.wild.resolve(fragments.slice(1), ctx);
+		ctx.params[this.wildCard] = fragments[offset];
+		return this.wild.resolve(fragments, ctx, offset+1);
 	}
 
-	private async resolveSlug(fragments: string[], ctx: GenericContext): Promise<Response | null> {
+	private async resolveSlug(fragments: string[], ctx: GenericContext, offset: number): Promise<Response | null> {
 		if (!this.slug) return null;
 
-		ctx.params["$"] = fragments.join("/");
+		ctx.params["$"] = fragments.slice(offset).join("/");
 
 		const res = await this.slug.resolve(ctx);
 		if (res instanceof Response) return res;

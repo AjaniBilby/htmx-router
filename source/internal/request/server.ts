@@ -183,7 +183,7 @@ export class HtmxRouterServer {
 			const fragments = x === "" ? [] : x.split("/");
 
 
-			const res = await tree.resolve(fragments, ctx);
+			const res = await tree.resolve(fragments, ctx, 0);
 			if (res === null) return null;
 			response = res;
 		} catch (e) {

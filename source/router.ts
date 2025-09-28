@@ -155,7 +155,7 @@ export class RouteTree {
 
 	private async _resolve(fragments: string[], ctx: GenericContext, offset: number): Promise<Response | null> {
 		let res = (fragments.length - offset < 1
-				? await this.resolveIndex(fragments, ctx, offset)
+				? await this.resolveIndex(ctx)
 				: await this.resolveNext(fragments, ctx, offset)
 			)
 			|| await this.resolveWild(fragments, ctx, offset)
@@ -172,7 +172,7 @@ export class RouteTree {
 		return res;
 	}
 
-	private async resolveIndex(fragments: string[], ctx: GenericContext, offset: number): Promise<Response | null> {
+	private async resolveIndex(ctx: GenericContext): Promise<Response | null> {
 		if (!this.index) return null;
 
 		const res = await this.index.resolve(ctx);

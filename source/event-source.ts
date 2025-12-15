@@ -22,8 +22,8 @@ type Render = (jsx: JSX.Element) => string;
  * Includes a keep alive empty packet sent every 30sec (because Chrome implodes at 120sec, and can be unreliable at 60sec)
  */
 export class EventSource<JsxEnabled extends boolean = false> {
+	readonly _signal: AbortSignal;
 	#controller: ReadableStreamDefaultController | null;
-	#signal: AbortSignal;
 	#state: number;
 	#render?: Render;
 
@@ -59,9 +59,9 @@ export class EventSource<JsxEnabled extends boolean = false> {
 		this.#updatedAt = 0;
 
 		// immediate prepare for abortion
-		this.#signal = request.signal;
-		const cancel = () => { this.close(); this.#signal.removeEventListener("abort", cancel) };
-		this.#signal.addEventListener('abort', cancel);
+		this._signal = request.signal;
+		const cancel = () => { this.close(); this._signal.removeEventListener("abort", cancel) };
+		this._signal.addEventListener('abort', cancel);
 
 		const start  = (c: ReadableStreamDefaultController<Uint8Array>) => { this.#controller = c; this.#state = EventSource.OPEN; };
 		const stream = new ReadableStream<Uint8Array>({ start, cancel }, { highWaterMark: 0 });
@@ -71,7 +71,7 @@ export class EventSource<JsxEnabled extends boolean = false> {
 		keepAlive.add(this as EventSource<false>);
 	}
 
-	isAborted(): boolean { return this.#signal.aborted; }
+	isAborted(): boolean { return this._signal.aborted; }
 
 	#sendBytes(chunk: Uint8Array, active: boolean): boolean {
 		if (this.#state === EventSource.CLOSED) {
@@ -143,19 +143,19 @@ export class EventSource<JsxEnabled extends boolean = false> {
 export class EventSourceSet<JsxEnabled extends boolean = false> extends Set<EventSource<JsxEnabled>> {
 	private onAbort: () => void;
 
-	constructor(onAbort: () => void) {
+	constructor() {
 		super();
 		this.onAbort = () => this.cull();
 	}
 
 	add(stream: EventSource<JsxEnabled>) {
-		super.add(stream);
-		stream.addEventListener('abort', this.onAbort);
+		stream._signal.addEventListener('abort', this.onAbort);
+		return super.add(stream);
 	}
 
 	delete(stream: EventSource<JsxEnabled>) {
-		super.delete(stream);
-		stream.removeEventListener('abort', this.onAbort);
+		stream._signal.removeEventListener('abort', this.onAbort);
+		return super.delete(stream);
 	}
 
 	/**
@@ -220,9 +220,8 @@ export class SharedEventSource<JsxEnabled extends boolean = false> {
 	constructor (props: {
 		cache?: Record<string, SharedEventSourceCacheRule>;
 	} & (JsxEnabled extends true ? { render: Render } : {})) {
-		this.#pool          = new EventSourceSet<JsxEnabled>();
-
 		this.#render = (props as { render: Render })?.render || undefined;
+		this.#pool   = new EventSourceSet<JsxEnabled>();
 
 		this.#cache = {};
 		this.#rules = {};

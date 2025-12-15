@@ -86,17 +86,23 @@ export class RouteContext<T extends ParameterShaper = {}> {
 
 
 export class RouteResolver {
-	private stack: { leaf: RouteLeaf, slug?: string }[];
+	// using two seperate arrays to reduce object creation
+	// since these values are just pointers
+	private stack: RouteLeaf[];
+	private slugs: Array<string | undefined>;
+
 	readonly ctx: GenericContext;
 	constructor(ctx: GenericContext, fragments: string[], tree: RouteTree) {
 		this.stack = [];
+		this.slugs = [];
 		this.ctx = ctx;
 
 		tree._applyChain(this, fragments, 0);
 	}
 
 	push(leaf: RouteLeaf, slug?: string) {
-		this.stack.push({ leaf, slug });
+		this.stack.push(leaf);
+		this.slugs.push(slug);
 	}
 
 	async resolve(): Promise<Response | null> {
@@ -106,17 +112,17 @@ export class RouteResolver {
 			const node = this.stack[i];
 
 			// Determine the resolving function
-			const resolver = pull ? node.leaf.module.loader : node.leaf.module.action;
+			const resolver = pull ? node.module.loader : node.module.action;
 			if (!resolver) {
 				if (pull) continue;
 				return this.unwind(new Response("Method not Allowed", MakeStatus("Method Not Allowed", this.ctx.headers)), i);
 			}
 
 			// Apply the slug pseudo parameter if necessary
-			if (node.slug) this.ctx.params['$'] = node.slug;
+			if (this.slugs[i]) this.ctx.params['$'] = this.slugs[i]!;
 
 			try {
-				const context = this.ctx.shape(node.leaf.module.parameters || {}, node.leaf.path);
+				const context = this.ctx.shape(node.module.parameters || {}, node.path);
 
 				const jsx = await resolver(context);
 				if (jsx === null) continue;
@@ -136,11 +142,10 @@ export class RouteResolver {
 		for (let i=this.stack.length-1; i>=0; i--) {
 			const node = this.stack[i];
 
-			if (!node.leaf.module.error) continue;
-			if (node.slug) this.ctx.params['$'] = node.slug;
+			if (!node.module.error) continue;
 
 			try {
-				const jsx = await node.leaf.module.error(this.ctx.shape({}, node.leaf.path), e);
+				const jsx = await node.module.error(this.ctx.shape({}, node.path), e);
 
 				let caught: Response | string;
 				if (jsx instanceof Response) caught = jsx;

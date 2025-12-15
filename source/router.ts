@@ -85,7 +85,54 @@ export class RouteContext<T extends ParameterShaper = {}> {
 
 
 
+export class RouteResolver {
+	readonly stack: { leaf: RouteLeaf, slug?: string }[];
+	readonly ctx: GenericContext;
+	constructor(ctx: GenericContext, fragments: string[], tree: RouteTree) {
+		this.stack = [];
+		this.ctx = ctx;
 
+		tree._applyChain(this, fragments, 0);
+	}
+
+	push(leaf: RouteLeaf, slug?: string) {
+		this.stack.push({ leaf, slug });
+	}
+
+	async resolve(): Promise<Response | null> {
+		for (let i=this.stack.length-1; i>=0; i--) {
+			const node = this.stack[i];
+			if (node.slug) this.ctx.params['$'] = node.slug;
+
+			try {
+				const res = await node.leaf.resolve(this.ctx);
+				if (res !== null) return res;
+			} catch (e) {
+				return await this.unwind(i, e);
+			}
+		}
+
+		return null;
+	}
+
+	async unwind(offset: number, e: unknown) {
+		for (let i=this.stack.length-1; i>=0; i--) {
+			const node = this.stack[i];
+
+			if (!node.leaf.hasErrorHandler()) continue;
+			if (node.slug) this.ctx.params['$'] = node.slug;
+
+			try {
+				const res = await node.leaf.error(this.ctx, e);
+				if (res !== null) return res;
+			} catch (next) {
+				e = next;
+			}
+		}
+
+		throw e;
+	}
+}
 
 export class RouteTree {
 	private nested: Map<string, RouteTree>;
@@ -143,72 +190,23 @@ export class RouteTree {
 		next.ingest(node, path.slice(1));
 	}
 
-	async resolve(fragments: string[], ctx: GenericContext): Promise<Response | null> {
-		if (!this.slug) return await this._resolve(fragments, ctx);
-
-		try {
-			return await this._resolve(fragments, ctx);
-		} catch (e) {
-			return this.unwrap(ctx, e);
-		}
-	}
-
-	private async _resolve(fragments: string[], ctx: GenericContext): Promise<Response | null> {
-		let res = await this.resolveIndex(fragments, ctx)
-			|| await this.resolveNext(fragments, ctx)
-			|| await this.resolveWild(fragments, ctx)
-			|| await this.resolveSlug(fragments, ctx);
-
-		if (res instanceof Response) {
-			if (res.ok) return res;
-			if (100 <= res.status && res.status <= 399) return res;
-			if (res.headers.has("X-Caught")) return res;
-
-			return this.unwrap(ctx, res);
+	_applyChain(out: RouteResolver, fragments: string[], offset = 0): void {
+		if (this.slug) {
+			const slug = fragments.slice(offset).join('/');
+			out.push(this.slug, slug);
 		}
 
-		return res;
-	}
+		if (offset === fragments.length) {
+			if (this.index) out.push(this.index, undefined);
+			return;
+		}
 
-	private async resolveIndex(fragments: string[], ctx: GenericContext): Promise<Response | null> {
-		if (fragments.length > 0) return null;
-		if (!this.index) return null;
+		const keyed = this.nested.get(fragments[offset]);
+		if (keyed) return keyed._applyChain(out, fragments, offset+1);
 
-		const res = await this.index.resolve(ctx);
-		if (res instanceof Response) return res;
-		if (res === null) return null;
-
-		AssertUnreachable(res);
-	}
-
-	private async resolveNext(fragments: string[], ctx: GenericContext): Promise<Response | null> {
-		if (fragments.length < 1) return null;
-
-
-		const next = this.nested.get(fragments[0]);
-		if (!next) return null;
-
-		return await next.resolve(fragments.slice(1), ctx);
-	}
-
-	private async resolveWild(fragments: string[], ctx: GenericContext): Promise<Response | null> {
-		if (!this.wild) return null;
-		if (fragments.length < 1) return null;
-
-		ctx.params[this.wildCard] = fragments[0];
-		return this.wild.resolve(fragments.slice(1), ctx);
-	}
-
-	private async resolveSlug(fragments: string[], ctx: GenericContext): Promise<Response | null> {
-		if (!this.slug) return null;
-
-		ctx.params["$"] = fragments.join("/");
-
-		const res = await this.slug.resolve(ctx);
-		if (res instanceof Response) return res;
-		if (res === null) return null;
-
-		AssertUnreachable(res);
+		if (!this.wild) return;
+		out.ctx.params[this.wildCard] = fragments[offset];
+		return this.wild._applyChain(out, fragments, offset+1);
 	}
 
 	unwrap(ctx: GenericContext, res: unknown): Promise<Response> {
@@ -218,7 +216,7 @@ export class RouteTree {
 }
 
 class RouteLeaf {
-	private module: RouteModule<any>;
+	readonly module: RouteModule<any>;
 	readonly path: string;
 
 	constructor(module: RouteModule<any>, path: string) {
@@ -233,6 +231,10 @@ class RouteLeaf {
 
 		const res = ctx.render(jsx);
 		return html(res, { headers: ctx.headers });
+	}
+
+	hasErrorHandler() {
+		return this.module.error !== undefined;
 	}
 
 	async error(ctx: GenericContext, e: unknown): Promise<Response> {

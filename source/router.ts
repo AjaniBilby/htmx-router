@@ -86,7 +86,7 @@ export class RouteContext<T extends ParameterShaper = {}> {
 
 
 export class RouteResolver {
-	readonly stack: { leaf: RouteLeaf, slug?: string }[];
+	private stack: { leaf: RouteLeaf, slug?: string }[];
 	readonly ctx: GenericContext;
 	constructor(ctx: GenericContext, fragments: string[], tree: RouteTree) {
 		this.stack = [];
@@ -100,31 +100,59 @@ export class RouteResolver {
 	}
 
 	async resolve(): Promise<Response | null> {
+		const pull = this.ctx.request.method === "HEAD" || this.ctx.request.method === "GET";
+
 		for (let i=this.stack.length-1; i>=0; i--) {
 			const node = this.stack[i];
+
+			// Determine the resolving function
+			const resolver = pull ? node.leaf.module.loader : node.leaf.module.action;
+			if (!resolver) {
+				if (pull) continue;
+				return this.unwind(new Response("Method not Allowed", MakeStatus("Method Not Allowed", this.ctx.headers)), i);
+			}
+
+			// Apply the slug pseudo parameter if necessary
 			if (node.slug) this.ctx.params['$'] = node.slug;
 
 			try {
-				const res = await node.leaf.resolve(this.ctx);
-				if (res !== null) return res;
+				const context = this.ctx.shape(node.leaf.module.parameters || {}, node.leaf.path);
+
+				const jsx = await resolver(context);
+				if (jsx === null) continue;
+				if (jsx instanceof Response) return jsx;
+
+				const res = this.ctx.render(jsx);
+				return html(res, { headers: this.ctx.headers });
 			} catch (e) {
-				return await this.unwind(i, e);
+				return await this.unwind(e, i);
 			}
 		}
 
 		return null;
 	}
 
-	async unwind(offset: number, e: unknown) {
+	async unwind(e: unknown, offset: number) {
 		for (let i=this.stack.length-1; i>=0; i--) {
 			const node = this.stack[i];
 
-			if (!node.leaf.hasErrorHandler()) continue;
+			if (!node.leaf.module.error) continue;
 			if (node.slug) this.ctx.params['$'] = node.slug;
 
 			try {
-				const res = await node.leaf.error(this.ctx, e);
-				if (res !== null) return res;
+				const jsx = await node.leaf.module.error(this.ctx.shape({}, node.leaf.path), e);
+
+				let caught: Response | string;
+				if (jsx instanceof Response) caught = jsx;
+				else caught = this.ctx.render(jsx);
+
+				if (caught instanceof Response) {
+					caught.headers.set("X-Caught", "true");
+					return caught;
+				}
+
+				this.ctx.headers.set("X-Caught", "true");
+				return html(caught, e instanceof Response ? e : MakeStatus("Internal Server Error", this.ctx.headers));
 			} catch (next) {
 				e = next;
 			}
@@ -208,11 +236,6 @@ export class RouteTree {
 		out.ctx.params[this.wildCard] = fragments[offset];
 		return this.wild._applyChain(out, fragments, offset+1);
 	}
-
-	unwrap(ctx: GenericContext, res: unknown): Promise<Response> {
-		if (!this.slug) throw res;
-		return this.slug.error(ctx, res);
-	}
 }
 
 class RouteLeaf {
@@ -222,57 +245,5 @@ class RouteLeaf {
 	constructor(module: RouteModule<any>, path: string) {
 		this.module = module;
 		this.path = path;
-	}
-
-	async resolve(ctx: GenericContext): Promise<Response | null> {
-		const jsx = await this.response(ctx);
-		if (jsx === null) return null;
-		if (jsx instanceof Response) return jsx;
-
-		const res = ctx.render(jsx);
-		return html(res, { headers: ctx.headers });
-	}
-
-	hasErrorHandler() {
-		return this.module.error !== undefined;
-	}
-
-	async error(ctx: GenericContext, e: unknown): Promise<Response> {
-		if (!this.module.error) throw e;
-
-		const jsx = await this.module.error(ctx.shape({}, this.path), e);
-
-		let caught: Response | string;
-		if (jsx instanceof Response) caught = jsx;
-		else caught = ctx.render(jsx);
-
-		if (caught instanceof Response) {
-			caught.headers.set("X-Caught", "true");
-			return caught;
-		}
-
-		ctx.headers.set("X-Caught", "true");
-		return html(caught, e instanceof Response ? e : MakeStatus("Internal Server Error", ctx.headers));
-	}
-
-	private async response(ctx: GenericContext): Promise<JSX.Element | null> {
-		try {
-			if (!this.module.loader && !this.module.action) return null;
-
-			const context = ctx.shape(this.module.parameters || {}, this.path);
-
-			if (ctx.request.method === "HEAD" || ctx.request.method === "GET") {
-				if (this.module.loader) return await this.module.loader(context);
-				else return null;
-			}
-
-			if (this.module.action) return await this.module.action(context);
-			throw new Response("Method not Allowed", MakeStatus("Method Not Allowed", ctx.headers));
-		} catch (e) {
-			if (e instanceof Response && e.headers.has("X-Caught")) return e;
-			return await this.error(ctx, e);
-		}
-
-		return null;
 	}
 }

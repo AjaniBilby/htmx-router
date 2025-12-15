@@ -162,7 +162,9 @@ export class HtmxRouterServer {
 
 		const tree = await this.#getTree();
 
-		const res = await tree.unwrap(ctx, e);
+		const chain = new RouteResolver(ctx, [], tree);
+
+		const res = await chain.unwind(e, 0);
 		return await this.transform(ctx, res);
 	}
 
@@ -182,19 +184,19 @@ export class HtmxRouterServer {
 
 	async #resolveRoute(ctx: GenericContext, tree: RouteTree) {
 		let response: Response;
-		try {
-			const x = ctx.url.pathname.slice(1);
-			const fragments = x === "" ? [] : x.split("/");
 
-			const chain = new RouteResolver(ctx, fragments, tree);
+		const x = ctx.url.pathname.slice(1);
+		const fragments = x === "" ? [] : x.split("/");
+		const chain = new RouteResolver(ctx, fragments, tree);
+
+		try {
 			const res = await chain.resolve();
 			if (res === null) return null;
-
 			response = res;
 		} catch (e) {
 			if (e instanceof Error) this.vite?.ssrFixStacktrace(e);
 			console.error(e);
-			response = await tree.unwrap(ctx, e);
+			response = await chain.unwind(e, 0);
 		}
 
 		// context merge headers if divergent

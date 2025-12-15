@@ -141,6 +141,23 @@ export class EventSource<JsxEnabled extends boolean = false> {
 }
 
 export class EventSourceSet<JsxEnabled extends boolean = false> extends Set<EventSource<JsxEnabled>> {
+	private onAbort: () => void;
+
+	constructor(onAbort: () => void) {
+		super();
+		this.onAbort = () => this.cull();
+	}
+
+	add(stream: EventSource<JsxEnabled>) {
+		super.add(stream);
+		stream.addEventListener('abort', this.onAbort);
+	}
+
+	delete(stream: EventSource<JsxEnabled>) {
+		super.delete(stream);
+		stream.removeEventListener('abort', this.onAbort);
+	}
+
 	/**
 	 * Send update to all EventSources, auto closing failed dispatches
 	 * @returns number of successful sends
@@ -148,7 +165,7 @@ export class EventSourceSet<JsxEnabled extends boolean = false> extends Set<Even
 	dispatch(type: string, data: string): number {
 		let count = 0;
 		for (const stream of this) {
-			if (stream.readyState === 0) continue; // skip initializing
+			if (stream.readyState !== EventSource.OPEN) continue; // skip closed
 
 			const success = stream.dispatch(type, data);
 			if (success) count++
@@ -165,7 +182,7 @@ export class EventSourceSet<JsxEnabled extends boolean = false> extends Set<Even
 	cull(): number {
 		const count = this.size;
 		for (const stream of this) {
-			if (stream.readyState !== 2) continue;
+			if (stream.readyState !== EventSource.CLOSED) continue;
 			this.delete(stream);
 		}
 

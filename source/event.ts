@@ -1,3 +1,5 @@
+import { Singleton } from './util/singleton';
+
 declare global {
 	// Minimal shim for Deno global
 	const Deno: {
@@ -43,7 +45,7 @@ class LifecycleController extends EventTarget {
 		}
 
 		if (process) {
-			process.on('SIGINT',  () => trigger('SIGINT'));
+			// process.on('SIGINT',  () => trigger('SIGINT'));
 			process.on('SIGTERM', () => trigger('SIGTERM'));
 			process.on('SIGHUP',  () => trigger('SIGHUP'));
 		}
@@ -53,7 +55,7 @@ class LifecycleController extends EventTarget {
 				Deno.addSignalListener('SIGTERM', () => trigger('SIGTERM'));
 			}
 			Deno.addSignalListener("SIGHUP", () => trigger('SIGHUP'));
-			Deno.addSignalListener("SIGINT", () => trigger('SIGTERM'));
+			// Deno.addSignalListener("SIGINT", () => trigger('SIGINT'));
 		}
 	}
 
@@ -67,4 +69,4 @@ class LifecycleController extends EventTarget {
 	}
 }
 
-export const Lifecycle = new LifecycleController();
+export const Lifecycle = Singleton('htmx-router-lifecycle', () => new LifecycleController());

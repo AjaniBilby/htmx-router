@@ -306,7 +306,7 @@ export class SharedEventSource<JsxEnabled extends boolean = false> {
 const keepAlive = new EventSourceSet<false>();
 const interval = setInterval(() => { keepAlive.pulse(); }, 10_000);
 
-// Lifecycle.addEventListener('shutdown', () => {
-// 	clearInterval(interval);
-// 	keepAlive.closeAll();
-// });
+Lifecycle.addEventListener('shutdown', () => {
+	clearInterval(interval);
+	keepAlive.closeAll();
+});

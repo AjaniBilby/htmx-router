@@ -1,4 +1,4 @@
-import { Singleton } from './util/singleton';
+import { Singleton } from './util/singleton.js';
 
 declare global {
 	// Minimal shim for Deno global

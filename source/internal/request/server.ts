@@ -5,11 +5,11 @@ import type { ViteDevServer } from "vite";
 
 import { connectToWeb } from "./compatibility/vite/connectToWeb.js";
 
+import { RouteTree, RouteResolver } from "../../router.js";
 import { GenericContext } from "../router.js";
 import { RouterModule } from "./index.js";
 import { NodeAdaptor } from "./compatibility/node.js";
 import { MakeStatus } from "../../status.js";
-import { RouteTree } from "../../router.js";
 import { redirect } from "../../response.js";
 
 export type Config = {
@@ -32,11 +32,15 @@ type Transformer = (ctx: GenericContext, res: Response) => Promise<Response | vo
 
 
 function UrlCleaner({ url }: GenericContext) {
-	const i = url.pathname.lastIndexOf("/");
+	let i = url.pathname.lastIndexOf("/");
 	if (i === 0) return null;
 	if (i !== url.pathname.length-1) return null;
 
-	url.pathname = url.pathname.slice(0, -1);
+	i--;
+	while (url.pathname[i] === '/' && i > 0) i--;
+
+	if (i === 0) url.pathname = '/';
+	else url.pathname = url.pathname.slice(0, i);
 
 	return redirect(url.toString(), { permanent: true });
 }
@@ -158,7 +162,9 @@ export class HtmxRouterServer {
 
 		const tree = await this.#getTree();
 
-		const res = await tree.unwrap(ctx, e);
+		const chain = new RouteResolver(ctx, [], tree);
+
+		const res = await chain.unwind(e, 0);
 		return await this.transform(ctx, res);
 	}
 
@@ -178,18 +184,19 @@ export class HtmxRouterServer {
 
 	async #resolveRoute(ctx: GenericContext, tree: RouteTree) {
 		let response: Response;
+
+		const x = ctx.url.pathname.slice(1);
+		const fragments = x === "" ? [] : x.split("/");
+		const chain = new RouteResolver(ctx, fragments, tree);
+
 		try {
-			const x = ctx.url.pathname.slice(1);
-			const fragments = x === "" ? [] : x.split("/");
-
-
-			const res = await tree.resolve(fragments, ctx);
+			const res = await chain.resolve();
 			if (res === null) return null;
 			response = res;
 		} catch (e) {
 			if (e instanceof Error) this.vite?.ssrFixStacktrace(e);
 			console.error(e);
-			response = await tree.unwrap(ctx, e);
+			response = await chain.unwind(e, 0);
 		}
 
 		// context merge headers if divergent

@@ -1,4 +1,6 @@
 import { ServerOnlyWarning } from "./internal/util.js";
+import { MakeStatus } from './status.js';
+import { Lifecycle } from "./event.js";
 ServerOnlyWarning("event-source");
 
 
@@ -22,8 +24,8 @@ type Render = (jsx: JSX.Element) => string;
  * Includes a keep alive empty packet sent every 30sec (because Chrome implodes at 120sec, and can be unreliable at 60sec)
  */
 export class EventSource<JsxEnabled extends boolean = false> {
+	readonly _signal: AbortSignal;
 	#controller: ReadableStreamDefaultController | null;
-	#signal: AbortSignal;
 	#state: number;
 	#render?: Render;
 
@@ -49,7 +51,8 @@ export class EventSource<JsxEnabled extends boolean = false> {
 
 	constructor(request: Request, render: JsxEnabled extends true ? Render : undefined) {
 		this.#controller = null;
-		this.#state = EventSource.CONNECTING;
+		this.#state  = EventSource.CONNECTING;
+		this._signal = request.signal;
 		this.#render = render;
 
 		this.withCredentials = request.mode === "cors";
@@ -58,10 +61,15 @@ export class EventSource<JsxEnabled extends boolean = false> {
 		this.createdAt = Date.now();
 		this.#updatedAt = 0;
 
+		if (Lifecycle.isShuttingDown()) {
+			this.response = new Response('Server is shutting down', MakeStatus('Service Unavailable'));
+			this.#state   = EventSource.CLOSED;
+			return;
+		}
+
 		// immediate prepare for abortion
-		this.#signal = request.signal;
-		const cancel = () => { this.close(); this.#signal.removeEventListener("abort", cancel) };
-		this.#signal.addEventListener('abort', cancel);
+		const cancel = () => { this.close(); this._signal.removeEventListener("abort", cancel) };
+		this._signal.addEventListener('abort', cancel);
 
 		const start  = (c: ReadableStreamDefaultController<Uint8Array>) => { this.#controller = c; this.#state = EventSource.OPEN; };
 		const stream = new ReadableStream<Uint8Array>({ start, cancel }, { highWaterMark: 0 });
@@ -71,7 +79,7 @@ export class EventSource<JsxEnabled extends boolean = false> {
 		keepAlive.add(this as EventSource<false>);
 	}
 
-	isAborted(): boolean { return this.#signal.aborted; }
+	isAborted(): boolean { return this._signal.aborted; }
 
 	#sendBytes(chunk: Uint8Array, active: boolean): boolean {
 		if (this.#state === EventSource.CLOSED) {
@@ -105,7 +113,7 @@ export class EventSource<JsxEnabled extends boolean = false> {
 	 * For internal use only
 	 * @deprecated
 	 */
-	_keepAlive(): boolean {
+	pulse(): boolean {
 		return this.#sendText("\n\n", false);
 	}
 
@@ -141,6 +149,23 @@ export class EventSource<JsxEnabled extends boolean = false> {
 }
 
 export class EventSourceSet<JsxEnabled extends boolean = false> extends Set<EventSource<JsxEnabled>> {
+	private onAbort: () => void;
+
+	constructor() {
+		super();
+		this.onAbort = () => this.cull();
+	}
+
+	add(stream: EventSource<JsxEnabled>) {
+		stream._signal.addEventListener('abort', this.onAbort);
+		return super.add(stream);
+	}
+
+	delete(stream: EventSource<JsxEnabled>) {
+		stream._signal.removeEventListener('abort', this.onAbort);
+		return super.delete(stream);
+	}
+
 	/**
 	 * Send update to all EventSources, auto closing failed dispatches
 	 * @returns number of successful sends
@@ -148,7 +173,7 @@ export class EventSourceSet<JsxEnabled extends boolean = false> extends Set<Even
 	dispatch(type: string, data: string): number {
 		let count = 0;
 		for (const stream of this) {
-			if (stream.readyState === 0) continue; // skip initializing
+			if (stream.readyState !== EventSource.OPEN) continue; // skip closed
 
 			const success = stream.dispatch(type, data);
 			if (success) count++
@@ -165,11 +190,27 @@ export class EventSourceSet<JsxEnabled extends boolean = false> extends Set<Even
 	cull(): number {
 		const count = this.size;
 		for (const stream of this) {
-			if (stream.readyState !== 2) continue;
+			if (stream.readyState !== EventSource.CLOSED) continue;
 			this.delete(stream);
 		}
 
 		return count;
+	}
+
+	/**
+	 * INTERNAL: Send keep-alive to all EventSources
+	 * @deprecated
+	 */
+	pulse (): number {
+		let count = 0;
+		for (const stream of this) {
+			if (stream.readyState !== EventSource.OPEN) continue; // skip closed
+
+			const success = stream.pulse();
+			if (success) count++;
+		}
+
+		return count
 	}
 
 	/**
@@ -203,9 +244,8 @@ export class SharedEventSource<JsxEnabled extends boolean = false> {
 	constructor (props: {
 		cache?: Record<string, SharedEventSourceCacheRule>;
 	} & (JsxEnabled extends true ? { render: Render } : {})) {
-		this.#pool          = new EventSourceSet<JsxEnabled>();
-
 		this.#render = (props as { render: Render })?.render || undefined;
+		this.#pool   = new EventSourceSet<JsxEnabled>();
 
 		this.#cache = {};
 		this.#rules = {};
@@ -263,20 +303,10 @@ export class SharedEventSource<JsxEnabled extends boolean = false> {
 
 // Auto close all SSE streams when shutdown requested
 // Without this graceful shutdowns will hang indefinitely
-const keepAlive = new Set<EventSource<false>>();
-const interval = setInterval(() => {
-	for (const e of keepAlive) {
-		if (e.readyState === EventSource.CLOSED) {
-			keepAlive.delete(e);
-			continue;
-		}
-		e._keepAlive();
-	}
-}, 10_000);
+const keepAlive = new EventSourceSet<false>();
+const interval = setInterval(() => { keepAlive.pulse(); }, 10_000);
 
-
-function Shutdown () { clearInterval(interval); }
-if (process) {
-	process.on('SIGTERM', Shutdown);
-	process.on('SIGHUP',  Shutdown);
-}
+// Lifecycle.addEventListener('shutdown', () => {
+// 	clearInterval(interval);
+// 	keepAlive.closeAll();
+// });

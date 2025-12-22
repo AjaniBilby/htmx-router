@@ -11,6 +11,8 @@ export function Defer<T extends ParameterShaper>(props: {
 		hx-get={Deferral(props.loader, props.params)}
 		hx-trigger="load"
 		hx-swap="outerHTML transition:true"
+		hx-replace-url="false"
+		hx-push-url="false"
 		style={{ display: "contents" }}
 	>{props.children ? props.children : ""}</div>
 }`;

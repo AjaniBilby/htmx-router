@@ -85,7 +85,87 @@ export class RouteContext<T extends ParameterShaper = {}> {
 
 
 
+export class RouteResolver {
+	// using two seperate arrays to reduce object creation
+	// since these values are just pointers
+	private stack: RouteLeaf[];
+	private slugs: Array<string | undefined>;
 
+	readonly ctx: GenericContext;
+	constructor(ctx: GenericContext, fragments: string[], tree: RouteTree) {
+		this.stack = [];
+		this.slugs = [];
+		this.ctx = ctx;
+
+		tree._applyChain(this, fragments, 0);
+	}
+
+	push(leaf: RouteLeaf, slug?: string) {
+		this.stack.push(leaf);
+		this.slugs.push(slug);
+	}
+
+	async resolve(): Promise<Response | null> {
+		const pull = this.ctx.request.method === "HEAD" || this.ctx.request.method === "GET";
+
+		for (let i=this.stack.length-1; i>=0; i--) {
+			const node = this.stack[i];
+
+			// Determine the resolving function
+			const resolver = pull ? node.module.loader : node.module.action;
+			if (!resolver) {
+				if (pull) continue;
+				return this.unwind(new Response("Method not Allowed", MakeStatus("Method Not Allowed", this.ctx.headers)), i);
+			}
+
+			// Apply the slug pseudo parameter if necessary
+			if (this.slugs[i]) this.ctx.params['$'] = this.slugs[i]!;
+
+			try {
+				const context = this.ctx.shape(node.module.parameters || {}, node.path);
+
+				const jsx = await resolver(context);
+				if (jsx === null) continue;
+				if (jsx instanceof Response) return jsx;
+
+				const res = this.ctx.render(jsx);
+				return html(res, { headers: this.ctx.headers });
+			} catch (e) {
+				return await this.unwind(e, i);
+			}
+		}
+
+		return null;
+	}
+
+	async unwind(e: unknown, offset: number) {
+		for (let i=this.stack.length-1; i>=0; i--) {
+			const node = this.stack[i];
+
+			if (!node.module.error) continue;
+
+			try {
+				const jsx = await node.module.error(this.ctx.shape({}, node.path), e);
+
+				let caught: Response | string;
+				if (jsx instanceof Response) caught = jsx;
+				else caught = this.ctx.render(jsx);
+
+				if (caught instanceof Response) {
+					caught.headers.set("X-Caught", "true");
+					return caught;
+				}
+
+				this.ctx.headers.set("X-Caught", "true");
+				return html(caught, e instanceof Response ? e : MakeStatus("Internal Server Error", this.ctx.headers));
+			} catch (next) {
+				e = next;
+			}
+		}
+
+		throw e;
+	}
+}
 
 export class RouteTree {
 	private nested: Map<string, RouteTree>;
@@ -143,134 +223,32 @@ export class RouteTree {
 		next.ingest(node, path.slice(1));
 	}
 
-	async resolve(fragments: string[], ctx: GenericContext): Promise<Response | null> {
-		if (!this.slug) return await this._resolve(fragments, ctx);
-
-		try {
-			return await this._resolve(fragments, ctx);
-		} catch (e) {
-			return this.unwrap(ctx, e);
-		}
-	}
-
-	private async _resolve(fragments: string[], ctx: GenericContext): Promise<Response | null> {
-		let res = await this.resolveIndex(fragments, ctx)
-			|| await this.resolveNext(fragments, ctx)
-			|| await this.resolveWild(fragments, ctx)
-			|| await this.resolveSlug(fragments, ctx);
-
-		if (res instanceof Response) {
-			if (res.ok) return res;
-			if (100 <= res.status && res.status <= 399) return res;
-			if (res.headers.has("X-Caught")) return res;
-
-			return this.unwrap(ctx, res);
+	_applyChain(out: RouteResolver, fragments: string[], offset = 0): void {
+		if (this.slug) {
+			const slug = fragments.slice(offset).join('/');
+			out.push(this.slug, slug);
 		}
 
-		return res;
-	}
+		if (offset === fragments.length) {
+			if (this.index) out.push(this.index, undefined);
+			return;
+		}
 
-	private async resolveIndex(fragments: string[], ctx: GenericContext): Promise<Response | null> {
-		if (fragments.length > 0) return null;
-		if (!this.index) return null;
+		const keyed = this.nested.get(fragments[offset]);
+		if (keyed) return keyed._applyChain(out, fragments, offset+1);
 
-		const res = await this.index.resolve(ctx);
-		if (res instanceof Response) return res;
-		if (res === null) return null;
-
-		AssertUnreachable(res);
-	}
-
-	private async resolveNext(fragments: string[], ctx: GenericContext): Promise<Response | null> {
-		if (fragments.length < 1) return null;
-
-
-		const next = this.nested.get(fragments[0]);
-		if (!next) return null;
-
-		return await next.resolve(fragments.slice(1), ctx);
-	}
-
-	private async resolveWild(fragments: string[], ctx: GenericContext): Promise<Response | null> {
-		if (!this.wild) return null;
-		if (fragments.length < 1) return null;
-
-		ctx.params[this.wildCard] = fragments[0];
-		return this.wild.resolve(fragments.slice(1), ctx);
-	}
-
-	private async resolveSlug(fragments: string[], ctx: GenericContext): Promise<Response | null> {
-		if (!this.slug) return null;
-
-		ctx.params["$"] = fragments.join("/");
-
-		const res = await this.slug.resolve(ctx);
-		if (res instanceof Response) return res;
-		if (res === null) return null;
-
-		AssertUnreachable(res);
-	}
-
-	unwrap(ctx: GenericContext, res: unknown): Promise<Response> {
-		if (!this.slug) throw res;
-		return this.slug.error(ctx, res);
+		if (!this.wild) return;
+		out.ctx.params[this.wildCard] = fragments[offset];
+		return this.wild._applyChain(out, fragments, offset+1);
 	}
 }
 
 class RouteLeaf {
-	private module: RouteModule<any>;
+	readonly module: RouteModule<any>;
 	readonly path: string;
 
 	constructor(module: RouteModule<any>, path: string) {
 		this.module = module;
 		this.path = path;
-	}
-
-	async resolve(ctx: GenericContext): Promise<Response | null> {
-		const jsx = await this.response(ctx);
-		if (jsx === null) return null;
-		if (jsx instanceof Response) return jsx;
-
-		const res = ctx.render(jsx);
-		return html(res, { headers: ctx.headers });
-	}
-
-	async error(ctx: GenericContext, e: unknown): Promise<Response> {
-		if (!this.module.error) throw e;
-
-		const jsx = await this.module.error(ctx.shape({}, this.path), e);
-
-		let caught: Response | string;
-		if (jsx instanceof Response) caught = jsx;
-		else caught = ctx.render(jsx);
-
-		if (caught instanceof Response) {
-			caught.headers.set("X-Caught", "true");
-			return caught;
-		}
-
-		ctx.headers.set("X-Caught", "true");
-		return html(caught, e instanceof Response ? e : MakeStatus("Internal Server Error", ctx.headers));
-	}
-
-	private async response(ctx: GenericContext): Promise<JSX.Element | null> {
-		try {
-			if (!this.module.loader && !this.module.action) return null;
-
-			const context = ctx.shape(this.module.parameters || {}, this.path);
-
-			if (ctx.request.method === "HEAD" || ctx.request.method === "GET") {
-				if (this.module.loader) return await this.module.loader(context);
-				else return null;
-			}
-
-			if (this.module.action) return await this.module.action(context);
-			throw new Response("Method not Allowed", MakeStatus("Method Not Allowed", ctx.headers));
-		} catch (e) {
-			if (e instanceof Response && e.headers.has("X-Caught")) return e;
-			return await this.error(ctx, e);
-		}
-
-		return null;
 	}
 }

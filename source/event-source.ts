@@ -1,4 +1,6 @@
 import { ServerOnlyWarning } from "./internal/util.js";
+import { MakeStatus } from './status.js';
+import { Lifecycle } from "./event.js";
 ServerOnlyWarning("event-source");
 
 
@@ -49,7 +51,8 @@ export class EventSource<JsxEnabled extends boolean = false> {
 
 	constructor(request: Request, render: JsxEnabled extends true ? Render : undefined) {
 		this.#controller = null;
-		this.#state = EventSource.CONNECTING;
+		this.#state  = EventSource.CONNECTING;
+		this._signal = request.signal;
 		this.#render = render;
 
 		this.withCredentials = request.mode === "cors";
@@ -58,8 +61,13 @@ export class EventSource<JsxEnabled extends boolean = false> {
 		this.createdAt = Date.now();
 		this.#updatedAt = 0;
 
+		if (Lifecycle.isShuttingDown()) {
+			this.response = new Response('Server is shutting down', MakeStatus('Service Unavailable'));
+			this.#state   = EventSource.CLOSED;
+			return;
+		}
+
 		// immediate prepare for abortion
-		this._signal = request.signal;
 		const cancel = () => { this.close(); this._signal.removeEventListener("abort", cancel) };
 		this._signal.addEventListener('abort', cancel);
 
@@ -105,7 +113,7 @@ export class EventSource<JsxEnabled extends boolean = false> {
 	 * For internal use only
 	 * @deprecated
 	 */
-	_keepAlive(): boolean {
+	pulse(): boolean {
 		return this.#sendText("\n\n", false);
 	}
 
@@ -187,6 +195,22 @@ export class EventSourceSet<JsxEnabled extends boolean = false> extends Set<Even
 		}
 
 		return count;
+	}
+
+	/**
+	 * INTERNAL: Send keep-alive to all EventSources
+	 * @deprecated
+	 */
+	pulse (): number {
+		let count = 0;
+		for (const stream of this) {
+			if (stream.readyState !== EventSource.OPEN) continue; // skip closed
+
+			const success = stream.pulse();
+			if (success) count++;
+		}
+
+		return count
 	}
 
 	/**
@@ -279,20 +303,10 @@ export class SharedEventSource<JsxEnabled extends boolean = false> {
 
 // Auto close all SSE streams when shutdown requested
 // Without this graceful shutdowns will hang indefinitely
-const keepAlive = new Set<EventSource<false>>();
-const interval = setInterval(() => {
-	for (const e of keepAlive) {
-		if (e.readyState === EventSource.CLOSED) {
-			keepAlive.delete(e);
-			continue;
-		}
-		e._keepAlive();
-	}
-}, 10_000);
+const keepAlive = new EventSourceSet<false>();
+const interval = setInterval(() => { keepAlive.pulse(); }, 10_000);
 
-
-function Shutdown () { clearInterval(interval); }
-if (process) {
-	process.on('SIGTERM', Shutdown);
-	process.on('SIGHUP',  Shutdown);
-}
+// Lifecycle.addEventListener('shutdown', () => {
+// 	clearInterval(interval);
+// 	keepAlive.closeAll();
+// });

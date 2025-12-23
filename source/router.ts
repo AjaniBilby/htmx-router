@@ -139,6 +139,8 @@ export class RouteResolver {
 	}
 
 	async unwind(e: unknown, offset: number) {
+		if (e instanceof Response && e.headers.get("X-Caught") === 'true') return e;
+
 		for (let i=this.stack.length-1; i>=0; i--) {
 			const node = this.stack[i];
 

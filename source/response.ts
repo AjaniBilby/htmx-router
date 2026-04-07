@@ -51,6 +51,7 @@ export function revalidate(init?: ResponseInit): Response {
 	const res = new Response("", init);
 	res.headers.set("HX-Location", "");
 	res.headers.set("HX-Replace-Url", "");
+	res.headers.set("HX-Push-Url", "false");
 	res.headers.set("X-Caught", "true");
 
 	return res;

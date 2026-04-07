@@ -21,7 +21,7 @@ function ClientMounter() {
 		},
 		apply: () => document.documentElement.setAttribute('data-theme', theme.get()),
 		set: (value: Theme, sync = true) => {
-			localStorage.setItem("theme", next);
+			localStorage.setItem("theme", value);
 			theme.apply();
 
 			if (sync) channel.postMessage({ type: 'set', theme: value });

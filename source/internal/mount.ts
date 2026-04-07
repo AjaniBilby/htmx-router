@@ -4,11 +4,13 @@ ServerOnlyWarning("client-mounter");
 import { CutString, QuickHash } from "./util.js";
 import { RouteContext } from "../index.js";
 
+type Theme = 'light' | 'dark';
+
 // this function simply exists so it can be stringified and written into the client js bundle
 function ClientMounter() {
 	const theme = {
 		get: () => {
-			return (localStorage.getItem("theme") || theme.infer()) as "light" | "dark";
+			return (localStorage.getItem("theme") || theme.infer()) as Theme;
 		},
 		infer: () => {
 			const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -17,17 +19,37 @@ function ClientMounter() {
 
 			return current;
 		},
-		apply: () => {
-			document.documentElement.setAttribute('data-theme', theme.get());
+		apply: () => document.documentElement.setAttribute('data-theme', theme.get()),
+		set: (next: Theme) => {
+			localStorage.setItem("theme", next);
+			theme.apply();
+
+			channel.postMessage({ type: 'set', theme: next });
+
+			return theme;
 		},
 		toggle: () => {
-			if (theme.get() === "dark") localStorage.setItem("theme", "light");
-			else localStorage.setItem("theme", "dark");
-
+			const next = theme.get() === 'dark' ? 'light' : 'dark';
+			localStorage.setItem("theme", next);
 			theme.apply();
-			return localStorage.getItem("theme") as "light" | "dark";
+
+			channel.postMessage({ type: 'set', theme: next });
+
+			return theme;
 		}
 	}
+
+	const channel = new BroadcastChannel('hx-theme');
+	channel.addEventListener('message', (event: MessageEvent<{ type: 'set', theme: Theme }>) => {
+		if (event?.data?.type !== 'set') return;
+
+		const next = event.data.theme;
+		if (next === 'light') localStorage.setItem("theme", 'light');
+		if (next === 'dark')  localStorage.setItem("theme", 'dark');
+		else return; // no-op on unrecognised
+
+		theme.apply();
+	});
 
 	/**
 	 * based on https://gist.github.com/hyamamoto/fd435505d29ebfa3d9716fd2be8d42f0,
@@ -164,15 +186,10 @@ export function GetMountUrl() {
  * RouteTree mounting point
  */
 export const path = "/_/mount/$hash";
-
-export const parameters = {
-	hash: String
-}
-
+export const parameters = { hash: String };
 export async function loader(ctx: RouteContext<typeof parameters>) {
 	if (!ctx.params.hash) return null;
 
-	// const build = GetSheet();
 	if (!ctx.params.hash.startsWith(hash)) return null;
 
 	ctx.headers.set("Content-Type", "text/javascript");

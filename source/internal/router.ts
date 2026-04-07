@@ -16,6 +16,7 @@ export class GenericContext {
 	readonly timer: RequestTimer;
 	readonly url: URL;
 	readonly render: HtmxRouterServer["render"];
+	path: string;
 
 	constructor(request: GenericContext["request"], url: GenericContext["url"], scope: HtmxRouterServer) {
 		this.cookie  = new Cookies(request.headers.get("cookie"));
@@ -26,11 +27,14 @@ export class GenericContext {
 		this.timer   = new RequestTimer(scope.timers);
 		this.scope   = scope;
 		this.render  = scope.render;
+		this.path    = '$';
 	}
 
 	finalize(res: Response) { this.timer.writeTo(res.headers); }
 
 	shape<T extends ParameterShaper>(shape: T, path: string) {
-		return new RouteContext(this, this.params as ParameterPrelude<T>, shape, path);
+		const ctx = new RouteContext(this, this.params as ParameterPrelude<T>, shape, path);
+		this.path = path;
+		return ctx;
 	}
 }

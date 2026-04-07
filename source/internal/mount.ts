@@ -20,22 +20,22 @@ function ClientMounter() {
 			return current;
 		},
 		apply: () => document.documentElement.setAttribute('data-theme', theme.get()),
-		set: (next: Theme) => {
+		set: (value: Theme, sync = true) => {
 			localStorage.setItem("theme", next);
 			theme.apply();
 
-			channel.postMessage({ type: 'set', theme: next });
+			if (sync) channel.postMessage({ type: 'set', theme: value });
 
 			return theme;
 		},
 		toggle: () => {
-			const next = theme.get() === 'dark' ? 'light' : 'dark';
-			localStorage.setItem("theme", next);
+			const value = theme.get() === 'dark' ? 'light' : 'dark';
+			localStorage.setItem("theme", value);
 			theme.apply();
 
-			channel.postMessage({ type: 'set', theme: next });
+			channel.postMessage({ type: 'set', theme: value });
 
-			return theme;
+			return value;
 		}
 	}
 
@@ -44,11 +44,8 @@ function ClientMounter() {
 		if (event?.data?.type !== 'set') return;
 
 		const next = event.data.theme;
-		if (next === 'light') localStorage.setItem("theme", 'light');
-		if (next === 'dark')  localStorage.setItem("theme", 'dark');
-		else return; // no-op on unrecognised
-
-		theme.apply();
+		if (next === 'light') theme.set('light', false);
+		if (next === 'dark')  theme.set('dark',  false);
 	});
 
 	/**

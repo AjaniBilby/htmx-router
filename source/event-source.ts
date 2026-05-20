@@ -170,7 +170,7 @@ export class EventSourceSet<JsxEnabled extends boolean = false> extends Set<Even
 	 * Send update to all EventSources, auto closing failed dispatches
 	 * @returns number of successful sends
 	 */
-	dispatch(type: string, data: string): number {
+	dispatch(type: string, data: JsxEnabled extends true ? (JSX.Element | string) : string): number {
 		let count = 0;
 		for (const stream of this) {
 			if (stream.readyState !== EventSource.OPEN) continue; // skip closed
@@ -247,7 +247,7 @@ export class EventSourceMap<T, JsxEnabled extends boolean = false> extends Map<E
 	 * Send update to all EventSources, auto closing failed dispatches
 	 * @returns number of successful sends
 	 */
-	dispatch(type: string, data: string): number {
+	dispatch(type: string, data: JsxEnabled extends true ? (JSX.Element | string) : string): number {
 		let count = 0;
 		for (const stream of this.keys()) {
 			if (stream.readyState !== EventSource.OPEN) continue; // skip closed

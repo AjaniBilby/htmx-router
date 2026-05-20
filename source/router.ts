@@ -169,6 +169,8 @@ export class RouteResolver {
 	}
 }
 
+type IngestContext = { path: string[], route: string, params: string[] };
+
 export class RouteTree {
 	private nested: Map<string, RouteTree>;
 
@@ -189,21 +191,33 @@ export class RouteTree {
 		this.slug = null;
 	}
 
-	ingest(node: RouteLeaf, path?: string[]): void {
-		if (!path) path = node.path.length === 0 ? [] : node.path.slice(1).split("/");
 
-		if (path.length === 0) {
+
+	ingest(node: RouteLeaf, ctx?: IngestContext): void {
+		if (!ctx) ctx = {
+			path:  node.path.slice(1).split("/").reverse(),
+			route: node.path,
+			params: [] as any[],
+		};
+
+		const segment = ctx.path.pop();
+		if (!segment) {
+			node.checkParameters(ctx);
 			this.index = node;
 			return;
 		}
 
-		if (path[0] === "$") {
+		if (segment === "$") {
+			ctx.params.push('$');
+			node.checkParameters(ctx);
 			this.slug = node;
 			return;
 		}
 
-		if (path[0][0] === "$") {
-			const wildCard = path[0].slice(1);
+		if (segment[0] === "$") {
+			const wildCard = segment.slice(1);
+			ctx.params.push(wildCard);
+
 			// Check wildcard isn't being changed
 			if (!this.wild) {
 				this.wildCard = wildCard;
@@ -212,17 +226,17 @@ export class RouteTree {
 				throw new Error(`Redefinition of wild card ${this.wildCard} to ${wildCard}`);
 			}
 
-			this.wild.ingest(node, path.slice(1));
+			this.wild.ingest(node, ctx);
 			return;
 		}
 
-		let next = this.nested.get(path[0]);
+		let next = this.nested.get(segment);
 		if (!next) {
 			next = new RouteTree();
-			this.nested.set(path[0], next);
+			this.nested.set(segment, next);
 		}
 
-		next.ingest(node, path.slice(1));
+		next.ingest(node, ctx);
 	}
 
 	_applyChain(out: RouteResolver, fragments: string[], offset = 0): void {
@@ -252,5 +266,14 @@ class RouteLeaf {
 	constructor(module: RouteModule<any>, path: string) {
 		this.module = module;
 		this.path = path;
+	}
+
+	checkParameters(ctx: IngestContext) {
+		if (!this.module.parameters) return;
+
+		for (const key in this.module.parameters) {
+			if (ctx.params.includes(key)) continue;
+			console.warn(`\x1b[33mWarn:\x1b[0m \x1b[36m${ctx.route}\x1b[0m has no parameter \x1b[36m${key}\x1b[0m`);
+		}
 	}
 }

@@ -1,5 +1,5 @@
-import * as etag from "./etag";
-import { ResponseInit } from "./util/types";
+import * as etag from "./etag.js";
+import { ResponseInit } from "./util/types.js";
 
 
 export function text(text: BodyInit, init?: ResponseInit): Response {

@@ -28,6 +28,7 @@ export class EventSource<JsxEnabled extends boolean = false> {
 	#controller: ReadableStreamDefaultController | null;
 	#state: number;
 	#render?: Render;
+	#cancelListener: () => void;
 
 	readonly response: Response;
 
@@ -49,7 +50,7 @@ export class EventSource<JsxEnabled extends boolean = false> {
 	static OPEN       = 1;
 	static CLOSED     = 2;
 
-	constructor(request: Request, render: JsxEnabled extends true ? Render : undefined) {
+	constructor(request: Request & { completed?: Promise<void> }, render: JsxEnabled extends true ? Render : undefined) {
 		this.#controller = null;
 		this.#state  = EventSource.CONNECTING;
 		this._signal = request.signal;
@@ -64,17 +65,20 @@ export class EventSource<JsxEnabled extends boolean = false> {
 		if (Lifecycle.isShuttingDown()) {
 			this.response = new Response('Server is shutting down', MakeStatus('Service Unavailable'));
 			this.#state   = EventSource.CLOSED;
+			this.#cancelListener = () => {};
 			return;
 		}
 
 		// immediate prepare for abortion
-		const cancel = () => { this.close(); this._signal.removeEventListener("abort", cancel) };
+		const cancel = () => { this.close() };
 		this._signal.addEventListener('abort', cancel);
+		if (request.completed instanceof Promise) request.completed.finally(cancel);
 
 		const start  = (c: ReadableStreamDefaultController<Uint8Array>) => { this.#controller = c; this.#state = EventSource.OPEN; };
 		const stream = new ReadableStream<Uint8Array>({ start, cancel }, { highWaterMark: 0 });
 
 		this.response = new Response(stream, { headers });
+		this.#cancelListener = cancel;
 
 		keepAlive.add(this as EventSource<false>);
 	}
@@ -85,6 +89,7 @@ export class EventSource<JsxEnabled extends boolean = false> {
 		if (this.#state === EventSource.CLOSED) {
 			const err = new Error(`Warn: Attempted to send data on closed stream for: ${this.url}`);
 			console.warn(err);
+			this.close();
 		}
 
 		if (this.isAborted()) {
@@ -129,6 +134,8 @@ export class EventSource<JsxEnabled extends boolean = false> {
 	}
 
 	close (): boolean {
+		this._signal.removeEventListener("abort", this.#cancelListener);
+
 		if (this.#controller) {
 			try { this.#controller.close(); }
 			catch (e) { console.error(e); }
@@ -173,7 +180,12 @@ export class EventSourceSet<JsxEnabled extends boolean = false> extends Set<Even
 	dispatch(type: string, data: JsxEnabled extends true ? (JSX.Element | string) : string): number {
 		let count = 0;
 		for (const stream of this) {
-			if (stream.readyState !== EventSource.OPEN) continue; // skip closed
+			if (stream.readyState !== EventSource.OPEN) {
+				if (stream.readyState === EventSource.CLOSED) {
+					this.delete(stream);
+				}
+				continue; // skip closed
+			}
 
 			const success = stream.dispatch(type, data);
 			if (success) count++
@@ -204,7 +216,12 @@ export class EventSourceSet<JsxEnabled extends boolean = false> extends Set<Even
 	pulse (): number {
 		let count = 0;
 		for (const stream of this) {
-			if (stream.readyState !== EventSource.OPEN) continue; // skip closed
+			if (stream.readyState !== EventSource.OPEN) {
+				if (stream.readyState === EventSource.CLOSED) {
+					this.delete(stream);
+				}
+				continue; // skip closed
+			}
 
 			const success = stream.pulse();
 			if (success) count++;
@@ -250,7 +267,12 @@ export class EventSourceMap<T, JsxEnabled extends boolean = false> extends Map<E
 	dispatch(type: string, data: JsxEnabled extends true ? (JSX.Element | string) : string): number {
 		let count = 0;
 		for (const stream of this.keys()) {
-			if (stream.readyState !== EventSource.OPEN) continue; // skip closed
+			if (stream.readyState !== EventSource.OPEN) {
+				if (stream.readyState === EventSource.CLOSED) {
+					this.delete(stream);
+				}
+				continue; // skip closed
+			}
 
 			const success = stream.dispatch(type, data);
 			if (success) count++
@@ -371,3 +393,7 @@ Lifecycle.addEventListener('shutdown', () => {
 	clearInterval(interval);
 	keepAlive.closeAll();
 });
+
+export function GetEventSourceCount(): number {
+	return keepAlive.size;
+}
